@@ -1,18 +1,16 @@
-image: java:8
+image:
+  adoptopenjdk/openjdk8
 
 before_script:
-  - apt-get update -yqq
-  - apt-get install apt-transport-https -yqq
+  - apt-get update -y
+  - apt-get install apt-transport-https -y
+  - apt-get install gnupg -y
   - echo "deb http://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list
   - apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823
-  - apt-get update -yqq
-  - apt-get install sbt -yqq
+  - apt-get update -y
+  - apt-get install sbt -y
   - sbt sbtVersion
 
-stages:
-  - test
-
 test:
-  stage: test
   script:
     - sbt clean test
