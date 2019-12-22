@@ -93,7 +93,10 @@ class Player extends Actor with ActorLogging {
   def receive: Receive = {
     case Degats(valeur) =>
       life -= valeur
-      if (life < 0) life = 0
+      if (life < 0) {
+        life = 0
+        log.info("Le joueur " + self.path.name + " est mort :/")
+      }
       log.info(self.path.name + ": " + life)
     case Stats =>
       val stats = Map(
