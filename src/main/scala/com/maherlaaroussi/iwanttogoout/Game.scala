@@ -6,16 +6,16 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.concurrent.ExecutionContext
 
-object Carte {
+object Game {
   case class NewPlayer(player: ActorRef)
   case class AttackPlayer(player: ActorRef)
   case class PositionJoueur(player: ActorRef)
   case class MoveJoueur(player: ActorRef, direction: String)
-  def apply(): Props = Props(new Carte())
+  def apply(): Props = Props(new Game())
 }
-class Carte extends Actor with ActorLogging {
+class Game extends Actor with ActorLogging {
 
-  import Carte._
+  import Game._
 
   val r = scala.util.Random
   val taille = 6
@@ -32,15 +32,13 @@ class Carte extends Actor with ActorLogging {
       "est" -> r.nextInt(2),
       "ouest" -> r.nextInt(2),
       "sud" -> r.nextInt(2)
-    )
+    ).withDefaultValue(0)
   }
 
   // ----- Création du chemin de sortie
   // Il part du centre de la carte et finit tout à gauche
   for (i <- 0 until taille/2) {
-    map(i)(taille/2) = Map(
-      "est" -> 1
-    )
+    map(i)(taille/2) = map(i)(taille/2) + ("est" -> 1)
   }
 
   def chercherJoueur(player: ActorRef): Option[(ActorRef, (Int, Int))] = {
@@ -50,7 +48,6 @@ class Carte extends Actor with ActorLogging {
   // TODO: Create the class Monster
   // TODO: Receive of winning the game
 
-  // TODO: Mettre en place une liste de joueurs avec leur position
   def receive: Receive = {
     case NewPlayer(player) => players += (player -> (taille/2, taille/2))
     case AttackPlayer(player) => chercherJoueur(player) match {
@@ -64,9 +61,16 @@ class Carte extends Actor with ActorLogging {
     case MoveJoueur(player, direction) =>
       var inci = Map("est" -> 1, "ouest" -> -1).withDefaultValue(0)(direction)
       var incj = Map("nord" -> -1, "sud" -> 1).withDefaultValue(0)(direction)
+      var dgts = 1 + r.nextInt(100)
       players map { j =>
-        if (j._1 == player)
+        if (j._1 == player) {
           players = players + (j._1 -> (j._2._1 + inci, j._2._2 + incj))
+          // En présence d'un monstre
+          if (map(j._2._1 + inci)(j._2._2 + incj)("monstre") == 1) {
+            log.info(player.path.name + " a subi " + dgts + " dégats")
+            j._1 ! Player.Degats(dgts)
+          }
+        }
      }
     case msg @ _ => log.info(s"Message : $msg")
   }
@@ -104,15 +108,26 @@ class Player extends Actor with ActorLogging {
 
 object main extends App {
 
+  import Game._
+  import Player._
+
   val systeme = ActorSystem("simplesys")
-  val carte = systeme.actorOf(Carte(), "carte")
+  val carte = systeme.actorOf(Game(), "carte")
   val player = systeme.actorOf(Player(), "Maher")
-  carte ! Carte.NewPlayer(player)
-  carte ! Carte.AttackPlayer(player)
-  carte ! Carte.PositionJoueur(player)
-  carte ! Carte.MoveJoueur(player, "ouest")
-  carte ! Carte.PositionJoueur(player)
-  carte ! Carte.MoveJoueur(player, "est")
-  carte ! Carte.PositionJoueur(player)
+  carte ! NewPlayer(player)
+  Thread.sleep(1000)
+  carte ! PositionJoueur(player)
+  Thread.sleep(1000)
+  carte ! MoveJoueur(player, "ouest")
+  Thread.sleep(1000)
+  carte ! PositionJoueur(player)
+  Thread.sleep(1000)
+  carte ! MoveJoueur(player, "ouest")
+  Thread.sleep(1000)
+  carte ! PositionJoueur(player)
+  Thread.sleep(1000)
+  carte ! MoveJoueur(player, "ouest")
+  Thread.sleep(1000)
+  carte ! PositionJoueur(player)
 
 }
