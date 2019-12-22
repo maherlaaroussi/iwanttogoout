@@ -24,21 +24,24 @@ class Game extends Actor with ActorLogging {
   implicit val timeout = new Timeout(2 seconds)
   implicit val executionContext = ActorSystem().dispatcher
 
-  // ----- Map aléatoire du jeu
-  for (i <- 0 until taille ; j <- 0 until taille) {
-    map(i)(j) = Map(
-      "monstre" -> r.nextInt(2),
-      "nord" -> r.nextInt(2),
-      "est" -> r.nextInt(2),
-      "ouest" -> r.nextInt(2),
-      "sud" -> r.nextInt(2)
-    ).withDefaultValue(0)
-  }
+  generateMap
 
-  // ----- Création du chemin de sortie
-  // Il part du centre de la carte et finit tout à gauche
-  for (i <- 0 until taille/2) {
-    map(i)(taille/2) = map(i)(taille/2) + ("est" -> 1)
+  def generateMap: Unit = {
+    // ----- Map aléatoire du jeu
+    for (i <- 0 until taille ; j <- 0 until taille) {
+      map(i)(j) = Map(
+        "monstre" -> r.nextInt(2),
+        "nord" -> r.nextInt(2),
+        "est" -> r.nextInt(2),
+        "ouest" -> r.nextInt(2),
+        "sud" -> r.nextInt(2)
+      ).withDefaultValue(0)
+    }
+    // ----- Création du chemin de sortie
+    // Il part du centre de la carte et finit tout à gauche
+    for (i <- 0 until taille/2) {
+      map(i)(taille/2) = map(i)(taille/2) + ("est" -> 1)
+    }
   }
 
   def chercherJoueur(player: ActorRef): Option[(ActorRef, (Int, Int))] = {
@@ -47,6 +50,7 @@ class Game extends Actor with ActorLogging {
 
   // TODO: Create the class Monster
   // TODO: Receive of winning the game
+  // TODO: Génération de la map par rapport à une requete reçue
 
   def receive: Receive = {
     case NewPlayer(player) => players += (player -> (taille/2, taille/2))
