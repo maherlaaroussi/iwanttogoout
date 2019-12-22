@@ -9,7 +9,8 @@ import scala.concurrent.ExecutionContext
 object Carte {
   case class NewPlayer(player: ActorRef)
   case class AttackPlayer(player: ActorRef)
-  case class InfomationJoueur(player: ActorRef)
+  case class PositionJoueur(player: ActorRef)
+  case class MoveJoueur(player: ActorRef, direction: String)
   def apply(): Props = Props(new Carte())
 }
 class Carte extends Actor with ActorLogging {
@@ -17,7 +18,7 @@ class Carte extends Actor with ActorLogging {
   import Carte._
 
   val r = scala.util.Random
-  val taille = 5
+  val taille = 6
   var map: Array[Array[Map[String, AnyVal]]] = Array.ofDim[Map[String, AnyVal]](taille, taille)
   var players: Map[ActorRef, (Int, Int)] = Map[ActorRef, (Int, Int)]()
   implicit val timeout = new Timeout(2 seconds)
@@ -34,28 +35,39 @@ class Carte extends Actor with ActorLogging {
     )
   }
 
-  def chercherJoueur(player: ActorRef): Option[ActorRef] = {
-    return Option(players.find(_._1 == player).get._1)
+  // ----- Création du chemin de sortie
+  // Il part du centre de la carte et finit tout à gauche
+  for (i <- 0 until taille/2) {
+    map(i)(taille/2) = Map(
+      "est" -> 1
+    )
   }
 
-  // TODO: Create the unique path to the exit
+  def chercherJoueur(player: ActorRef): Option[(ActorRef, (Int, Int))] = {
+    return Option(players.find(_._1 == player).get)
+  }
+
   // TODO: Create the class Monster
-  // TODO: Receive of moving a player
   // TODO: Receive of winning the game
 
   // TODO: Mettre en place une liste de joueurs avec leur position
   def receive: Receive = {
     case NewPlayer(player) => players += (player -> (taille/2, taille/2))
     case AttackPlayer(player) => chercherJoueur(player) match {
-      case Some(j) => j ! Player.Degats(1 + r.nextInt(100))
+      case Some(j) => j._1 ! Player.Degats(1 + r.nextInt(100))
       case None => log.info("Ce joueur n'est pas dans la carte !")
     }
-    case InfomationJoueur(player) => chercherJoueur(player) match {
-      case Some(j) =>
-        val infos = (j ? Player.Stats)
-        infos.map(i => log.info("Result: " + i))
+    case PositionJoueur(player) => chercherJoueur(player) match {
+      case Some(j) => log.info(j._1.path.name + ": " + j._2)
       case None => log.info("Ce joueur n'est pas dans la carte !")
     }
+    case MoveJoueur(player, direction) =>
+      var inci = Map("est" -> 1, "ouest" -> -1).withDefaultValue(0)(direction)
+      var incj = Map("nord" -> -1, "sud" -> 1).withDefaultValue(0)(direction)
+      players map { j =>
+        if (j._1 == player)
+          players = players + (j._1 -> (j._2._1 + inci, j._2._2 + incj))
+     }
     case msg @ _ => log.info(s"Message : $msg")
   }
 
@@ -97,6 +109,10 @@ object main extends App {
   val player = systeme.actorOf(Player(), "Maher")
   carte ! Carte.NewPlayer(player)
   carte ! Carte.AttackPlayer(player)
-  carte ! Carte.InfomationJoueur(player)
+  carte ! Carte.PositionJoueur(player)
+  carte ! Carte.MoveJoueur(player, "ouest")
+  carte ! Carte.PositionJoueur(player)
+  carte ! Carte.MoveJoueur(player, "est")
+  carte ! Carte.PositionJoueur(player)
 
 }
