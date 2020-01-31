@@ -48,6 +48,13 @@ class Game extends Actor with ActorLogging {
     return Option(players.find(_._1 == player).get)
   }
 
+  def positionJoueur(player: ActorRef): Option[(Int, Int)] = {
+    chercherJoueur(player) match {
+      case Some(j) => return Option(j._2)
+      case None => return None
+    }
+  }
+
   // TODO: Create the class Monster
   // TODO: Receive of winning the game
   // TODO: Génération de la map par rapport à une requete reçue
@@ -68,9 +75,13 @@ class Game extends Actor with ActorLogging {
       var dgts = 1 + r.nextInt(100)
       players map { j =>
         if (j._1 == player) {
-          players = players + (j._1 -> (j._2._1 + inci, j._2._2 + incj))
+          var posx = j._2._1 + inci
+          var posy = j._2._2 + incj
+          if (posx > taille/2 || posx < 0) posx = j._2._1
+          if (posy > taille/2 || posy < 0) posy = j._2._2
+          players = players + (j._1 -> (posx, posy))
           // En présence d'un monstre
-          if (map(j._2._1 + inci)(j._2._2 + incj)("monstre") == 1) {
+          if (map(posx)(posy)("monstre") == 1) {
             log.info(player.path.name + " a subi " + dgts + " dégats")
             j._1 ! Player.Degats(dgts)
           }
@@ -89,6 +100,7 @@ object Player {
 class Player extends Actor with ActorLogging {
 
   // TODO: Action to fight a monster with player
+  // TODO: Joueur mort peut demander à etre retiré des joueurs de la partie
 
   import Player._
 
@@ -136,5 +148,13 @@ object main extends App {
   carte ! MoveJoueur(player, "ouest")
   Thread.sleep(1000)
   carte ! PositionJoueur(player)
+  carte ! MoveJoueur(player, "ouest")
+  Thread.sleep(1000)
+  carte ! PositionJoueur(player)
+  carte ! MoveJoueur(player, "ouest")
+  Thread.sleep(1000)
+  carte ! PositionJoueur(player)
+
+  System.exit(0)
 
 }

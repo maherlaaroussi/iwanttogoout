@@ -9,3 +9,5 @@ lazy val akkaVersion = "2.5.26"
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % akkaVersion
 )
+
+fork in run := true
