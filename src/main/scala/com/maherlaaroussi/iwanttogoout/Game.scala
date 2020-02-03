@@ -2,9 +2,10 @@ package com.maherlaaroussi.iwanttogoout
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.pattern.ask
 import akka.util.Timeout
+
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Await, ExecutionContext}
 
 object Game {
   case class NewPlayer(player: ActorRef)
@@ -82,8 +83,12 @@ class Game extends Actor with ActorLogging {
           players = players + (j._1 -> (posx, posy))
           // En présence d'un monstre
           if (map(posx)(posy)("monstre") == 1) {
-            log.info(player.path.name + " a subi " + dgts + " dégats")
+            val resFuture = (player ? Player.GetLife).mapTo[Int]
+            var life = Await.result(resFuture, 5 seconds)
             j._1 ! Player.Degats(dgts)
+            val resFutureLife = (player ? Player.GetLife).mapTo[Int]
+            life = Await.result(resFutureLife, 5 seconds)
+            log.info(player.path.name + ": -" + dgts + ", " + life)
           }
         }
      }
@@ -94,7 +99,7 @@ class Game extends Actor with ActorLogging {
 
 object Player {
   case class Degats(valeur: Int)
-  case object Stats
+  case object GetLife
   def apply(): Props = Props(new Player())
 }
 class Player extends Actor with ActorLogging {
@@ -105,21 +110,19 @@ class Player extends Actor with ActorLogging {
   import Player._
 
   var life = 100
+  val currSender = sender()
+
+  def getLife(): Unit = {
+    sender() ! life
+  }
 
   def receive: Receive = {
     case Degats(valeur) =>
       life -= valeur
-      if (life < 0) {
-        life = 0
-        log.info("Le joueur " + self.path.name + " est mort :/")
-      }
-      log.info(self.path.name + ": " + life)
-    case Stats =>
-      val stats = Map(
-        "name" -> self.path.name,
-        "life" -> life
-      )
-      sender ! stats
+      if (life < 0) life = 0
+    case GetLife =>
+      sender ! getLife()
+    //case msg @ _ => log.info(s"Message : $msg")
     case msg @ _ => log.info(s"Message : $msg")
   }
 
@@ -132,28 +135,31 @@ object main extends App {
 
   val systeme = ActorSystem("simplesys")
   val carte = systeme.actorOf(Game(), "carte")
-  val player = systeme.actorOf(Player(), "Maher")
-  carte ! NewPlayer(player)
+  val maher = systeme.actorOf(Player(), "Maher")
+  val john = systeme.actorOf(Player(), "John")
+
+  carte ! NewPlayer(maher)
   Thread.sleep(1000)
-  carte ! PositionJoueur(player)
+  carte ! NewPlayer(john)
   Thread.sleep(1000)
-  carte ! MoveJoueur(player, "ouest")
+
+  carte ! PositionJoueur(maher)
   Thread.sleep(1000)
-  carte ! PositionJoueur(player)
+  carte ! PositionJoueur(maher)
   Thread.sleep(1000)
-  carte ! MoveJoueur(player, "ouest")
-  Thread.sleep(1000)
-  carte ! PositionJoueur(player)
-  Thread.sleep(1000)
-  carte ! MoveJoueur(player, "ouest")
-  Thread.sleep(1000)
-  carte ! PositionJoueur(player)
-  carte ! MoveJoueur(player, "ouest")
-  Thread.sleep(1000)
-  carte ! PositionJoueur(player)
-  carte ! MoveJoueur(player, "ouest")
-  Thread.sleep(1000)
-  carte ! PositionJoueur(player)
+
+  move(maher, "nord")
+  move(maher, "nord")
+  move(maher, "nord")
+  move(maher, "nord")
+  move(maher, "nord")
+
+  def move(j: ActorRef, d: String): Unit = {
+    carte ! MoveJoueur(j, d)
+    Thread.sleep(1000)
+    carte ! PositionJoueur(j)
+    Thread.sleep(1000)
+  }
 
   System.exit(0)
 
