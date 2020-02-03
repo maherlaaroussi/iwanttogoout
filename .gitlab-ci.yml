@@ -11,6 +11,6 @@ before_script:
   - apt-get install sbt -y
   - sbt sbtVersion
 
-test_actor:
+run:
   script:
     - sbt run
