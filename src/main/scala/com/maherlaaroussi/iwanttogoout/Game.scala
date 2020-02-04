@@ -5,7 +5,7 @@ import akka.util.Timeout
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
 
 object Game {
   case class NewPlayer(player: ActorRef)
@@ -23,10 +23,10 @@ class Game extends Actor with ActorLogging {
   val taille = 6
   var map: Array[Array[Map[String, AnyVal]]] = Array.ofDim[Map[String, AnyVal]](taille, taille)
   var players: Map[ActorRef, (Int, Int)] = Map[ActorRef, (Int, Int)]()
-  implicit val timeout = new Timeout(2 seconds)
-  implicit val executionContext = ActorSystem().dispatcher
+  implicit val timeout: Timeout = new Timeout(2 seconds)
+  implicit val executionContext: ExecutionContextExecutor = ActorSystem().dispatcher
 
-  def generateMap: Unit = {
+  def generateMap(): Unit = {
     // ----- Map aléatoire du jeu
     for (i <- 0 until taille ; j <- 0 until taille) {
       map(i)(j) = Map(
@@ -59,7 +59,7 @@ class Game extends Actor with ActorLogging {
   // TODO: Génération de la map par rapport à une requete reçue
 
   def receive: Receive = {
-    case GenerateMap => generateMap
+    case GenerateMap => generateMap()
     case NewPlayer(player) => players += (player -> (taille/2, taille/2))
     case AttackPlayer(player) => chercherJoueur(player) match {
       case Some(j) => j._1 ! Player.Degats(1 + r.nextInt(100))
@@ -109,7 +109,7 @@ class Player extends Actor with ActorLogging {
   import Player._
 
   var life = 100
-  val currSender = sender()
+  val currSender: ActorRef = sender()
 
   def getLife(): Unit = {
     sender() ! life
@@ -121,7 +121,6 @@ class Player extends Actor with ActorLogging {
       if (life < 0) life = 0
     case GetLife =>
       sender ! getLife()
-    //case msg @ _ => log.info(s"Message : $msg")
     case msg @ _ => log.info(s"Message : $msg")
   }
 
