@@ -11,6 +11,7 @@ object Game {
   case class NewPlayer(player: ActorRef)
   case class AttackPlayer(player: ActorRef)
   case class PositionJoueur(player: ActorRef)
+  case class DeletePlayer(player: ActorRef)
   case object GenerateMap
   case class MoveJoueur(player: ActorRef, direction: String)
   def apply(): Props = Props(new Game())
@@ -23,6 +24,7 @@ class Game extends Actor with ActorLogging {
   val taille = 6
   var map: Array[Array[Map[String, AnyVal]]] = Array.ofDim[Map[String, AnyVal]](taille, taille)
   var players: Map[ActorRef, (Int, Int)] = Map[ActorRef, (Int, Int)]()
+  var dead_players: Set[ActorRef] = Set[ActorRef]()
   implicit val timeout: Timeout = new Timeout(2 seconds)
   implicit val executionContext: ExecutionContextExecutor = ActorSystem().dispatcher
 
@@ -44,28 +46,33 @@ class Game extends Actor with ActorLogging {
     }
   }
 
-  def chercherJoueur(player: ActorRef): Option[(ActorRef, (Int, Int))] = {
+  def findPlayer(player: ActorRef): Option[(ActorRef, (Int, Int))] = {
     return Option(players.find(_._1 == player).get)
   }
 
+  def sayonaraPlayer(player: ActorRef): Unit = {
+    dead_players = dead_players + players.find(_._1 == player).get._1
+    log.info(player.path.name + " deleted !")
+  }
+
   def positionJoueur(player: ActorRef): Option[(Int, Int)] = {
-    chercherJoueur(player) match {
+    findPlayer(player) match {
       case Some(j) => return Option(j._2)
       case None => return None
     }
   }
 
   // TODO: Receive of winning the game
-  // TODO: Génération de la map par rapport à une requete reçue
 
   def receive: Receive = {
     case GenerateMap => generateMap()
+    case DeletePlayer(player) => sayonaraPlayer(player)
     case NewPlayer(player) => players += (player -> (taille/2, taille/2))
-    case AttackPlayer(player) => chercherJoueur(player) match {
-      case Some(j) => j._1 ! Player.Degats(1 + r.nextInt(100))
+    case AttackPlayer(player) => findPlayer(player) match {
+      case Some(j) => j._1 ! Player.Damage(1 + r.nextInt(100))
       case None => log.info("Ce joueur n'est pas dans la carte !")
     }
-    case PositionJoueur(player) => chercherJoueur(player) match {
+    case PositionJoueur(player) => findPlayer(player) match {
       case Some(j) => log.info(j._1.path.name + ": " + j._2)
       case None => log.info("Ce joueur n'est pas dans la carte !")
     }
@@ -84,7 +91,7 @@ class Game extends Actor with ActorLogging {
           if (map(posx)(posy)("monstre") == 1) {
             val resFuture = (player ? Player.GetLife).mapTo[Int]
             var life = Await.result(resFuture, 5 seconds)
-            j._1 ! Player.Degats(dgts)
+            j._1 ! Player.Damage(dgts)
             val resFutureLife = (player ? Player.GetLife).mapTo[Int]
             life = Await.result(resFutureLife, 5 seconds)
             log.info(player.path.name + ": -" + dgts + ", " + life)
@@ -97,14 +104,11 @@ class Game extends Actor with ActorLogging {
 }
 
 object Player {
-  case class Degats(valeur: Int)
+  case class Damage(value: Int)
   case object GetLife
   def apply(): Props = Props(new Player())
 }
 class Player extends Actor with ActorLogging {
-
-  // TODO: Action to fight a monster with player
-  // TODO: Joueur mort peut demander à etre retiré des joueurs de la partie
 
   import Player._
 
@@ -116,9 +120,12 @@ class Player extends Actor with ActorLogging {
   }
 
   def receive: Receive = {
-    case Degats(valeur) =>
-      life -= valeur
-      if (life < 0) life = 0
+    case Damage(value) =>
+      life -= value
+      if (life < 0) {
+        life = 0
+        Game.DeletePlayer(self)
+      }
     case GetLife =>
       sender ! getLife()
     case msg @ _ => log.info(s"Message : $msg")
