@@ -11,6 +11,7 @@ object Game {
   case class NewPlayer(player: ActorRef)
   case class AttackPlayer(player: ActorRef)
   case class PositionJoueur(player: ActorRef)
+  case object GenerateMap
   case class MoveJoueur(player: ActorRef, direction: String)
   def apply(): Props = Props(new Game())
 }
@@ -24,8 +25,6 @@ class Game extends Actor with ActorLogging {
   var players: Map[ActorRef, (Int, Int)] = Map[ActorRef, (Int, Int)]()
   implicit val timeout = new Timeout(2 seconds)
   implicit val executionContext = ActorSystem().dispatcher
-
-  generateMap
 
   def generateMap: Unit = {
     // ----- Map aléatoire du jeu
@@ -56,11 +55,11 @@ class Game extends Actor with ActorLogging {
     }
   }
 
-  // TODO: Create the class Monster
   // TODO: Receive of winning the game
   // TODO: Génération de la map par rapport à une requete reçue
 
   def receive: Receive = {
+    case GenerateMap => generateMap
     case NewPlayer(player) => players += (player -> (taille/2, taille/2))
     case AttackPlayer(player) => chercherJoueur(player) match {
       case Some(j) => j._1 ! Player.Degats(1 + r.nextInt(100))
@@ -137,6 +136,8 @@ object main extends App {
   val carte = systeme.actorOf(Game(), "carte")
   val maher = systeme.actorOf(Player(), "Maher")
   val john = systeme.actorOf(Player(), "John")
+
+  carte ! GenerateMap
 
   carte ! NewPlayer(maher)
   Thread.sleep(1000)
