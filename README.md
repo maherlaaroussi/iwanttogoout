@@ -23,7 +23,7 @@ Serveur de jeu simpliste. Sur une map T x T, les joueurs tenteront de survivre e
 # Le jeu :
 
 ## Principe
-Un joueur peut être créé puis pourra être déplacé dans une map Z x Z. À chaque déplacement, le joueur peut être attaqué par un monstre s'il y en a dans la position du joueur. Arrivé à la limite de la map, le joueur ne pourra pas se déplacer en dehors des limites, mais chaque déplacement inutile fera qu'un monstre pourra vous a attaqué. Le gagnant sera celui qui trouvera la sortie en premier. À la fin de la partie, on pourra relancer une autre partie.
+Un joueur peut être créé puis pourra être déplacé dans une map Z x Z. À chaque déplacement, le joueur peut être attaqué par un monstre s'il y en a dans la position du joueur. Arrivé à la limite de la map, le joueur ne pourra pas se déplacer en dehors des limites, mais chaque déplacement inutile fera qu'un monstre pourra vous attaquer. Le gagnant sera celui qui trouvera la sortie en premier. À la fin de la partie, on pourra relancer une autre partie.
 
 ## Acteurs
 
