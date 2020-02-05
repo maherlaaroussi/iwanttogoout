@@ -5,7 +5,8 @@ import akka.util.Timeout
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object Game {
   case class NewPlayer(player: ActorRef)
@@ -76,16 +77,21 @@ class Game extends Actor with ActorLogging {
       case None => ;
     }
     case MoveJoueur(player, direction) =>
+
+      // TODO: Fix move in map, it's chaotic
+      // TODO: Every move of second player show messsage 'Not in this world'
+
+      log.info(players.toString)
       log.info(player.path.name + " -> " + direction)
-      var inci = Map("est" -> 1, "ouest" -> -1).withDefaultValue(0)(direction)
-      var incj = Map("nord" -> -1, "sud" -> 1).withDefaultValue(0)(direction)
+      var inci = Map("est" -> -1, "ouest" -> 1).withDefaultValue(0)(direction)
+      var incj = Map("nord" -> 1, "sud" -> -1).withDefaultValue(0)(direction)
       var dgts = 1 + r.nextInt(100)
       var here = false
       players map { j =>
         if (j._1 == player) {
           here = true
-          var posx = j._2._1 + inci
-          var posy = j._2._2 + incj
+          var posx = j._2._1 + incj
+          var posy = j._2._2 + inci
           if (posx > taille/2 || posx < 0) posx = j._2._1
           if (posy > taille/2 || posy < 0) posy = j._2._2
           players = players + (j._1 -> (posx, posy))
@@ -151,29 +157,51 @@ object main extends App {
   val carte = systeme.actorOf(Game(), "carte")
   val maher = systeme.actorOf(Player(), "Maher")
   val john = systeme.actorOf(Player(), "John")
+  val jane = systeme.actorOf(Player(), "Jane")
+  val duration = 5 seconds
+  var f = Future {}
 
-  carte ! GenerateMap
+  f = Future { carte ! GenerateMap }
+  Await.ready(f, duration)
 
-  carte ! NewPlayer(maher)
-  Thread.sleep(1000)
-  carte ! NewPlayer(john)
-  Thread.sleep(1000)
+  f = Future { carte ! NewPlayer(maher) }
+  Await.ready(f, duration)
+  f = Future { carte ! NewPlayer(john) }
+  Await.ready(f, duration)
+  f = Future { carte ! NewPlayer(jane) }
+  Await.ready(f, duration)
 
-  carte ! PositionJoueur(maher)
-  Thread.sleep(1000)
-  carte ! PositionJoueur(maher)
-  Thread.sleep(1000)
+  f = Future { move(maher, "nord") }
+  Await.ready(f, duration)
+  f = Future { move(maher, "nord") }
+  Await.ready(f, duration)
+  f = Future { move(maher, "nord") }
+  Await.ready(f, duration)
+  f = Future { move(maher, "nord") }
+  Await.ready(f, duration)
+  f = Future { move(maher, "nord") }
+  Await.ready(f, duration)
+  f = Future { move(maher, "nord") }
+  Await.ready(f, duration)
 
-  move(maher, "nord")
-  move(john, "ouest")
-  move(maher, "ouest")
-  move(john, "nord")
+  f = Future { move(john, "ouest") }
+  Await.ready(f, duration)
+  f = Future { move(john, "ouest") }
+  Await.ready(f, duration)
+  f = Future { move(john, "sud") }
+  Await.ready(f, duration)
+  f = Future { move(john, "sud") }
+  Await.ready(f, duration)
+
+  f = Future { move(jane, "sud") }
+  Await.ready(f, duration)
+  f = Future { move(jane, "sud") }
+  Await.ready(f, duration)
 
   def move(j: ActorRef, d: String): Unit = {
-    carte ! MoveJoueur(j, d)
-    Thread.sleep(500)
     carte ! PositionJoueur(j)
-    Thread.sleep(1000)
+    Thread.sleep(500)
+    carte ! MoveJoueur(j, d)
   }
 
   System.exit(0)

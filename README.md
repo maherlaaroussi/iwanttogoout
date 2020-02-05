@@ -17,6 +17,9 @@ Serveur de jeu simpliste. Sur une map T x T, les joueurs tenteront de survivre e
 - [ ] Notification quand la partie est fini
 - [ ] Notification pour le joueur qui a gagné la partie.
 - [ ] Possibilité de relancer une partie.
+- [X] Utilisation des Future et Await
+- [ ] Fixer le problème du déplacement chaotique
+- [ ] Fixer le problème du message affiché à partir du second joueur
 
 --------------------------------------------------------------------------------
 
