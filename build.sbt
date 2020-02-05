@@ -1,3 +1,5 @@
+import com.typesafe.config._
+
 name := "iwanttogoout"
 
 version := "0.1"
@@ -11,3 +13,5 @@ libraryDependencies ++= Seq(
 )
 
 fork in run := true
+
+val conffactory = ConfigFactory.load()

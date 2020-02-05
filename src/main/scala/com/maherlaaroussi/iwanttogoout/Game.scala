@@ -1,5 +1,5 @@
 package com.maherlaaroussi.iwanttogoout
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props, DeadLetter}
 import akka.pattern.ask
 import akka.util.Timeout
 
@@ -51,6 +51,7 @@ class Game extends Actor with ActorLogging {
   }
 
   def sayonaraPlayer(player: ActorRef): Unit = {
+    log.info("Sayonara!")
     dead_players = dead_players + players.find(_._1 == player).get._1
     log.info(player.path.name + " deleted !")
   }
@@ -124,6 +125,7 @@ class Player extends Actor with ActorLogging {
       life -= value
       if (life < 0) {
         life = 0
+        log.info(self.path.name + " est mort !")
         Game.DeletePlayer(self)
       }
     case GetLife =>
