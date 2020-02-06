@@ -1,0 +1,41 @@
+openapi: 3.0.1
+info:
+  title: iwanttogoout
+  description: API du serveur de jeu iwanttogoout.
+  version: 1.0.0
+servers:
+- url: http://localhost:8080/api
+paths:
+  /joueur/create/{name}:
+    get:
+      summary: Création d'un joueur.
+      description: Crée un joueur et récupère ses informations de base (nom, vie et position).
+      parameters:
+      - name: name
+        in: path
+        description: Le nom du joueur.
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: La position du joueur dans la map, sa vie et son nom.
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Joueur'
+components:
+  schemas:
+    Joueur:
+      required:
+      - name
+      - position
+      - life
+      type: object
+      properties:
+        name:
+          type: string
+        life:
+          type: integer
+        position:
+          type: string
