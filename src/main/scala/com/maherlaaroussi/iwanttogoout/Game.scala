@@ -23,6 +23,7 @@ class Game extends Actor with ActorLogging {
 
   val r = scala.util.Random
   val taille = 6
+  var party = false
   var map: Array[Array[Map[String, AnyVal]]] = Array.ofDim[Map[String, AnyVal]](taille, taille)
   var players: Map[ActorRef, (Int, Int)] = Map[ActorRef, (Int, Int)]()
   var dead_players: Set[ActorRef] = Set[ActorRef]()
@@ -45,7 +46,12 @@ class Game extends Actor with ActorLogging {
     for (i <- 0 until taille/2) {
       map(i)(taille/2) = map(i)(taille/2) + ("est" -> 1)
     }
+    party = true
   }
+
+  def destroyMap(): Unit = {
+    party = false
+    }
 
   def findPlayer(player: ActorRef): Option[(ActorRef, (Int, Int))] = {
     return players.find(_._1 == player)
@@ -86,39 +92,46 @@ class Game extends Actor with ActorLogging {
     case MoveJoueur(player, direction) =>
 
       // TODO: Fix move in map, it's chaotic
-      // TODO: Every move of second player show messsage 'Not in this world'
 
-      var move = player.path.name + ": " + positionJoueur(player).getOrElse("None") + " -> "
-      var inci = Map("est" -> -1, "ouest" -> 1).withDefaultValue(0)(direction)
-      var incj = Map("nord" -> 1, "sud" -> -1).withDefaultValue(0)(direction)
-      var dgts = 1 + r.nextInt(100)
-      var f = Future { 0 }
+      if (party) {
 
-      players map { j =>
-        if (j._1 == player) {
-          // Calcul de la nouvelle position
-          var posx = j._2._1 + incj
-          var posy = j._2._2 + inci
-          if (posx > taille/2 || posx < 0) posx = j._2._1
-          if (posy > taille/2 || posy < 0) posy = j._2._2
-          players = players + (j._1 -> (posx, posy))
+        players map { j =>
+          if (j._1 == player) {
 
-          move = move + positionJoueur(player).getOrElse("None")
+            var move = player.path.name + ": " + positionJoueur(player).getOrElse("None") + " -> "
+            var inci = Map("est" -> -1, "ouest" -> 1).withDefaultValue(0)(direction)
+            var incj = Map("nord" -> 1, "sud" -> -1).withDefaultValue(0)(direction)
+            var dgts = 1 + r.nextInt(100)
+            var f = Future { 0 }
 
-          // En présence d'un monstre
-          if (map(posx)(posy)("monstre") == 1) {
-            f = (player ? Player.GetLife).mapTo[Int]
-            var life = Await.result(f, 5 seconds)
-            j._1 ! Player.Damage(dgts)
-            f = (player ? Player.GetLife).mapTo[Int]
-            life = Await.result(f, 5 seconds)
-            log.info(move)
-            log.info(player.path.name + ": -" + dgts + ", Life: " + life)
-            if (life == 0) { sayonaraPlayer(player) }
+            // Calcul de la nouvelle position
+            var posx = j._2._1 + incj
+            var posy = j._2._2 + inci
+            if (posx > taille/2 || posx < 0) posx = j._2._1
+            if (posy > taille/2 || posy < 0) posy = j._2._2
+            players = players + (j._1 -> (posx, posy))
+
+            move = move + positionJoueur(player).getOrElse("None")
+
+            // En présence d'un monstre
+            if (map(posx)(posy)("monstre") == 1) {
+              f = (player ? Player.GetLife).mapTo[Int]
+              var life = Await.result(f, 5 seconds)
+              j._1 ! Player.Damage(dgts)
+              f = (player ? Player.GetLife).mapTo[Int]
+              life = Await.result(f, 5 seconds)
+              log.info(move)
+              log.info(player.path.name + ": -" + dgts + ", Life: " + life)
+              if (life == 0) { sayonaraPlayer(player) }
+            }
+
           }
-
         }
-     }
+      }
+      // Dans le cas où il n'y a pas de map
+      else {
+        log.info("La map a été réduite à néant :o !")
+      }
     case msg @ _ => log.info(s"Message : $msg")
   }
 
@@ -136,7 +149,7 @@ class Player extends Actor with ActorLogging {
 
   var life = 100
   val currSender: ActorRef = sender()
-  implicit val timeout: Timeout = new Timeout(5 seconds)
+  implicit val timeout: Timeout = new Timeout(10 seconds)
 
   def getLife(): Unit = {
     val client = sender()
