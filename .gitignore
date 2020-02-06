@@ -1,5 +1,7 @@
-target/*
-project/target/*
-project/project/*
 .idea
 .metals
+.cache
+.history
+target/
+project/
+.bloop
