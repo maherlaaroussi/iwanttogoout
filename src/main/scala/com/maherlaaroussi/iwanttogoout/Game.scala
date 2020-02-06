@@ -7,6 +7,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Random
 
 object Game {
   case class NewPlayer(player: ActorRef)
@@ -51,9 +52,15 @@ class Game extends Actor with ActorLogging {
   }
 
   def sayonaraPlayer(player: ActorRef): Unit = {
+    val r = new Random
+    var messages: List[String] = List(
+      "(Sûrement pas au paradis)",
+      "(Il était nul ...)",
+      "(C'était à prévoir)"
+    )
     dead_players = dead_players + players.find(_._1 == player).get._1
     players = players - player
-    log.info(player.path.name + " est mort :/ !")
+    log.info(player.path.name + " est mort " + messages(r.nextInt(messages.length)) + " !")
   }
 
   def positionJoueur(player: ActorRef): Option[(Int, Int)] = {
@@ -81,34 +88,36 @@ class Game extends Actor with ActorLogging {
       // TODO: Fix move in map, it's chaotic
       // TODO: Every move of second player show messsage 'Not in this world'
 
-      log.info(players.toString)
-      log.info(player.path.name + " -> " + direction)
+      var move = player.path.name + ": " + positionJoueur(player).getOrElse("None") + " -> "
       var inci = Map("est" -> -1, "ouest" -> 1).withDefaultValue(0)(direction)
       var incj = Map("nord" -> 1, "sud" -> -1).withDefaultValue(0)(direction)
       var dgts = 1 + r.nextInt(100)
-      var here = false
+      var f = Future { 0 }
+
       players map { j =>
         if (j._1 == player) {
-          here = true
+          // Calcul de la nouvelle position
           var posx = j._2._1 + incj
           var posy = j._2._2 + inci
           if (posx > taille/2 || posx < 0) posx = j._2._1
           if (posy > taille/2 || posy < 0) posy = j._2._2
           players = players + (j._1 -> (posx, posy))
+
+          move = move + positionJoueur(player).getOrElse("None")
+
           // En présence d'un monstre
           if (map(posx)(posy)("monstre") == 1) {
-            val resFuture = (player ? Player.GetLife).mapTo[Int]
-            var life = Await.result(resFuture, 10 seconds)
+            f = (player ? Player.GetLife).mapTo[Int]
+            var life = Await.result(f, 5 seconds)
             j._1 ! Player.Damage(dgts)
-            val resFutureLife = (player ? Player.GetLife).mapTo[Int]
-            life = Await.result(resFutureLife, 5 seconds)
+            f = (player ? Player.GetLife).mapTo[Int]
+            life = Await.result(f, 5 seconds)
+            log.info(move)
             log.info(player.path.name + ": -" + dgts + ", Life: " + life)
-            if (life == 0) {
-              sayonaraPlayer(player)
-            }
+            if (life == 0) { sayonaraPlayer(player) }
           }
+
         }
-      if (!here) log.info(player.path.name + " n'est plus de ce monde !")
      }
     case msg @ _ => log.info(s"Message : $msg")
   }
@@ -164,9 +173,9 @@ object main extends App {
   f = Future { carte ! GenerateMap }
   Await.ready(f, duration)
 
-  f = Future { carte ! NewPlayer(maher) }
-  Await.ready(f, duration)
   f = Future { carte ! NewPlayer(john) }
+  Await.ready(f, duration)
+  f = Future { carte ! NewPlayer(maher) }
   Await.ready(f, duration)
   f = Future { carte ! NewPlayer(jane) }
   Await.ready(f, duration)
@@ -199,8 +208,7 @@ object main extends App {
   Await.ready(f, duration)
 
   def move(j: ActorRef, d: String): Unit = {
-    carte ! PositionJoueur(j)
-    Thread.sleep(500)
+    Thread.sleep(100)
     carte ! MoveJoueur(j, d)
   }
 
