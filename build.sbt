@@ -1,17 +1,15 @@
 import com.typesafe.config._
 
-name := "iwanttogoout"
-
 version := "0.1"
-
-scalaVersion := "2.13.1"
-
-lazy val akkaVersion = "2.5.26"
+name := "iwanttogoout-scala-akka-http-server"
+organization := "io.swagger"
+scalaVersion := "2.12.6"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-actor" % akkaVersion
+  "com.typesafe.akka" %% "akka-http" % "10.1.5",
+  "com.typesafe.akka" %% "akka-stream" % "2.5.16",
+  "com.typesafe.akka" %% "akka-actor" % "2.5.26"
 )
 
 fork in run := true
-
 val conffactory = ConfigFactory.load()
