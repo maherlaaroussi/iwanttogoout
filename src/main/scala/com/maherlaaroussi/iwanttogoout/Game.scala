@@ -23,6 +23,7 @@ class Game extends Actor with ActorLogging {
 
   val r = scala.util.Random
   val taille = 6
+  val caseWin: (Int, Int) = (0, taille/2)
   var party = false
   var map: Array[Array[Map[String, AnyVal]]] = Array.ofDim[Map[String, AnyVal]](taille, taille)
   var players: Map[ActorRef, (Int, Int)] = Map[ActorRef, (Int, Int)]()
@@ -42,9 +43,9 @@ class Game extends Actor with ActorLogging {
       ).withDefaultValue(0)
     }
     // ----- Création du chemin de sortie
-    // Il part du centre de la carte et finit tout à gauche
-    for (i <- 0 until taille/2) {
-      map(i)(taille/2) = map(i)(taille/2) + ("est" -> 1)
+    // Il part du centre de la carte et finit tout en bas
+    for (j <- 0 until taille/2) {
+      map(taille/2)(j) = map(taille/2)(j) + ("sud" -> 1)
     }
     party = true
   }
@@ -60,13 +61,14 @@ class Game extends Actor with ActorLogging {
   def sayonaraPlayer(player: ActorRef): Unit = {
     val r = new Random
     var messages: List[String] = List(
-      "il n'ira sûrement pas au paradis.",
-      "il était nul, vraiment nul ...",
-      "c'était à prévoir."
+      "il/elle n'ira sûrement pas au paradis.",
+      "il/elle était nul/nulle, vraiment nul/nulle ...",
+      "c'était à prévoir.",
+      "arrête le jeu franchement ..."
     )
     dead_players = dead_players + players.find(_._1 == player).get._1
     players = players - player
-    log.info(player.path.name + " est mort, " + messages(r.nextInt(messages.length)))
+    log.info(player.path.name + " est mort/morte, " + messages(r.nextInt(messages.length)))
   }
 
   def positionJoueur(player: ActorRef): Option[(Int, Int)] = {
@@ -91,8 +93,7 @@ class Game extends Actor with ActorLogging {
     }
     case MoveJoueur(player, direction) =>
 
-      // TODO: Fix move in map, it's chaotic
-
+      // S'il existe bien une map dans le jeu
       if (party) {
 
         players map { j =>
@@ -107,10 +108,10 @@ class Game extends Actor with ActorLogging {
             // Calcul de la nouvelle position
             var posx = j._2._1 + incj
             var posy = j._2._2 + inci
-            if (posx > taille/2 || posx < 0) posx = j._2._1
-            if (posy > taille/2 || posy < 0) posy = j._2._2
+            val posMax = taille - 1
+            if (posx > posMax || posx < 0) posx = j._2._1
+            if (posy > posMax || posy < 0) posy = j._2._2
             players = players + (j._1 -> (posx, posy))
-
             move = move + positionJoueur(player).getOrElse("None")
 
             // En présence d'un monstre
@@ -123,6 +124,12 @@ class Game extends Actor with ActorLogging {
               log.info(move)
               log.info(player.path.name + ": -" + dgts + ", Life: " + life)
               if (life == 0) { sayonaraPlayer(player) }
+            }
+
+            // Le joueur a trouvé la sortie
+            if (j._2 == caseWin) {
+              log.info("Vous êtes sorti !!")
+              destroyMap()
             }
 
           }
@@ -180,49 +187,28 @@ object main extends App {
   val maher = systeme.actorOf(Player(), "Maher")
   val john = systeme.actorOf(Player(), "John")
   val jane = systeme.actorOf(Player(), "Jane")
-  val duration = 5 seconds
+  val duration = 10 seconds
   var f = Future {}
 
   f = Future { carte ! GenerateMap }
   Await.ready(f, duration)
 
-  f = Future { carte ! NewPlayer(john) }
-  Await.ready(f, duration)
-  f = Future { carte ! NewPlayer(maher) }
-  Await.ready(f, duration)
-  f = Future { carte ! NewPlayer(jane) }
-  Await.ready(f, duration)
-
-  f = Future { move(maher, "nord") }
-  Await.ready(f, duration)
-  f = Future { move(maher, "nord") }
-  Await.ready(f, duration)
-  f = Future { move(maher, "nord") }
-  Await.ready(f, duration)
-  f = Future { move(maher, "nord") }
-  Await.ready(f, duration)
-  f = Future { move(maher, "nord") }
-  Await.ready(f, duration)
-  f = Future { move(maher, "nord") }
-  Await.ready(f, duration)
-
-  f = Future { move(john, "ouest") }
-  Await.ready(f, duration)
-  f = Future { move(john, "ouest") }
-  Await.ready(f, duration)
-  f = Future { move(john, "sud") }
-  Await.ready(f, duration)
-  f = Future { move(john, "sud") }
-  Await.ready(f, duration)
-
-  f = Future { move(jane, "sud") }
-  Await.ready(f, duration)
-  f = Future { move(jane, "sud") }
-  Await.ready(f, duration)
+  add(jane)
+  move(jane, "sud")
+  move(jane, "sud")
+  move(jane, "sud")
+  move(jane, "sud")
 
   def move(j: ActorRef, d: String): Unit = {
-    Thread.sleep(100)
-    carte ! MoveJoueur(j, d)
+    Thread.sleep((0.2 seconds).toMillis)
+    f = Future { carte ! MoveJoueur(j, d) }
+    Await.ready(f, duration)
+  }
+
+  def add(j: ActorRef): Unit = {
+    Thread.sleep((0.5 seconds).toMillis)
+    f = Future { carte ! NewPlayer(j) }
+    Await.ready(f, duration)
   }
 
   System.exit(0)
