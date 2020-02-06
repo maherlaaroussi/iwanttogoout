@@ -54,13 +54,13 @@ class Game extends Actor with ActorLogging {
   def sayonaraPlayer(player: ActorRef): Unit = {
     val r = new Random
     var messages: List[String] = List(
-      "(Sûrement pas au paradis)",
-      "(Il était nul ...)",
-      "(C'était à prévoir)"
+      "il n'ira sûrement pas au paradis.",
+      "il était nul, vraiment nul ...",
+      "c'était à prévoir."
     )
     dead_players = dead_players + players.find(_._1 == player).get._1
     players = players - player
-    log.info(player.path.name + " est mort " + messages(r.nextInt(messages.length)) + " !")
+    log.info(player.path.name + " est mort, " + messages(r.nextInt(messages.length)))
   }
 
   def positionJoueur(player: ActorRef): Option[(Int, Int)] = {
