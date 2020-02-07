@@ -18,23 +18,34 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import scala.concurrent.Future
 import scala.io.StdIn
 
+import com.maherlaaroussi.iwanttogoout.TheGame
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
+
 
 object Main extends App {
 
   implicit val system = ActorSystem()
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
+  val thegame = new TheGame(system)
 
   object DefaultMarshaller extends DefaultApiMarshaller {
     def toEntityMarshallerJoueur: ToEntityMarshaller[Joueur] = jsonFormat3(Joueur)
   }
 
   object DefaultService extends DefaultApiService {
+
+    import com.maherlaaroussi.iwanttogoout.Game._
+
+    import com.maherlaaroussi.iwanttogoout.Player._
+    implicit val timeout = new Timeout(2 seconds)
+
     def joueurCreateNameGet(name: String)
                  (implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route = {
-      val reponse = Future {
-        Joueur(name, 0, "(0, 0)")
-      }
+      val reponse = (thegame.game ? NewPlayer(name)).mapTo[Joueur]
       requestcontext => {
         (reponse).flatMap {
           (joueur: Joueur) =>
@@ -62,6 +73,5 @@ object Main extends App {
   bindingFuture
     .flatMap(_.unbind())
     .onComplete(_ => system.terminate())
-
 
 }

@@ -8,16 +8,17 @@ import scala.language.postfixOps
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Random
+import io.swagger.server.model._
 
 object Game {
-  case class NewPlayer(player: ActorRef)
+  case class NewPlayer(name: String)
   case class AttackPlayer(player: ActorRef)
   case class PositionJoueur(player: ActorRef)
   case object GenerateMap
   case class MoveJoueur(player: ActorRef, direction: String)
-  def apply(): Props = Props(new Game())
+  def apply(system: ActorSystem): Props = Props(new Game(system))
 }
-class Game extends Actor with ActorLogging {
+class Game(system: ActorSystem) extends Actor with ActorLogging {
 
   import Game._
 
@@ -78,11 +79,12 @@ class Game extends Actor with ActorLogging {
     }
   }
 
-  // TODO: Receive of winning the game
-
   def receive: Receive = {
     case GenerateMap => generateMap()
-    case NewPlayer(player) => players += (player -> (taille/2, taille/2))
+    case NewPlayer(name) =>
+      var player = system.actorOf(Player(), name)
+      players += (player -> (taille/2, taille/2))
+      sender ! Joueur(name, 100, "(" + taille/2 + ", " + taille/2 + ")")
     case AttackPlayer(player) => findPlayer(player) match {
       case Some(j) => j._1 ! Player.Damage(1 + r.nextInt(100))
       case None => ;
@@ -176,3 +178,12 @@ class Player extends Actor with ActorLogging {
   }
 
 }
+
+class TheGame(system: ActorSystem) {
+  val game = system.actorOf(Game(system), "game")
+}
+
+object ApiMessages {
+  case class Joueur(name: String, life: Int, position: String)
+}
+

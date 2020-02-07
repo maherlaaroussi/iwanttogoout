@@ -11,6 +11,6 @@ before_script:
   - apt-get install sbt -y
   - sbt sbtVersion
 
-run:
+compile:
   script:
-    - sbt run
+    - sbt compile
