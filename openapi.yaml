@@ -7,9 +7,9 @@ servers:
 - url: http://localhost:8080/api
 paths:
   /joueur/create/{name}:
-    get:
+    post:
       summary: Création d'un joueur.
-      description: Crée un joueur et récupère ses informations de base (nom, vie et position).
+      description: Crée un joueur et récupère ses informations de base (nom, vie et position de départ).
       parameters:
       - name: name
         in: path
@@ -20,6 +20,48 @@ paths:
       responses:
         200:
           description: La position du joueur dans la map, sa vie et son nom.
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Joueur'
+  /joueur/delete/{name}:
+    delete:
+      summary: Suppression d'un joueur.
+      description: Supprime un joueur de la map et renvoi une réponse précisant si cela a été possible.
+      parameters:
+      - name: name
+        in: path
+        description: Le nom du joueur.
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Boooléan de la réponse du serveur.
+          content:
+            '*/*':
+              schema:
+                type: boolean
+  /joueur/update/{name}:
+    put:
+      summary: Modification d'un joueur.
+      description: Modifie le nom du joueur et renvoi l'état actuel du joueur dans le jeu.
+      parameters:
+      - name: name
+        in: path
+        description: Le nom du joueur.
+        required: true
+        schema:
+          type: string
+      - name: new
+        in: path
+        description: Le nouveau nom du joueur.
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Renvoi les informations actuelles du joueur dans le jeu.
           content:
             '*/*':
               schema:

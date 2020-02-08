@@ -15,13 +15,43 @@ class DefaultApi(
 
   lazy val route: Route =
     path("joueur" / "create" / Segment) { (name) => 
-      get {
+      post {
         
           
             
               
                 
-                  defaultService.joueurCreateNameGet(name = name)
+                  defaultService.joueurCreateNamePost(name = name)
+               
+             
+           
+         
+       
+      }
+    } ~
+    path("joueur" / "delete" / Segment) { (name) => 
+      delete {
+        
+          
+            
+              
+                
+                  defaultService.joueurDeleteNameDelete(name = name)
+               
+             
+           
+         
+       
+      }
+    } ~
+    path("joueur" / "update" / Segment) { (name, `new`) => 
+      put {
+        
+          
+            
+              
+                
+                  defaultService.joueurUpdateNamePut(name = name, `new` = `new`)
                
              
            
@@ -33,17 +63,34 @@ class DefaultApi(
 
 trait DefaultApiService {
 
-  def joueurCreateNameGet200(responseJoueur: Joueur)(implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route =
+  def joueurCreateNamePost200(responseJoueur: Joueur)(implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route =
     complete((200, responseJoueur))
   /**
    * Code: 200, Message: La position du joueur dans la map, sa vie et son nom., DataType: Joueur
    */
-  def joueurCreateNameGet(name: String)
+  def joueurCreateNamePost(name: String)
+      (implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route
+
+  def joueurDeleteNameDelete200(responseBoolean: Boolean): Route =
+    complete((200, responseBoolean))
+  /**
+   * Code: 200, Message: Boooléan de la réponse du serveur., DataType: Boolean
+   */
+  def joueurDeleteNameDelete(name: String): Route
+
+  def joueurUpdateNamePut200(responseJoueur: Joueur)(implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route =
+    complete((200, responseJoueur))
+  /**
+   * Code: 200, Message: Renvoi les informations actuelles du joueur dans le jeu., DataType: Joueur
+   */
+  def joueurUpdateNamePut(name: String, `new`: String)
       (implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route
 
 }
 
 trait DefaultApiMarshaller {
+
+  implicit def toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]
 
   implicit def toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]
 
