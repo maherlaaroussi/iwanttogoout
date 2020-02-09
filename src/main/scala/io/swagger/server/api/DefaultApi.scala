@@ -43,21 +43,6 @@ class DefaultApi(
          
        
       }
-    } ~
-    path("joueur" / "update" / Segment) { (name, `new`) => 
-      put {
-        
-          
-            
-              
-                
-                  defaultService.joueurUpdateNamePut(name = name, `new` = `new`)
-               
-             
-           
-         
-       
-      }
     }
 }
 
@@ -71,26 +56,19 @@ trait DefaultApiService {
   def joueurCreateNamePost(name: String)
       (implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route
 
-  def joueurDeleteNameDelete200(responseBoolean: Boolean): Route =
-    complete((200, responseBoolean))
+  def joueurDeleteNameDelete200: Route =
+    complete((200, "Le joueur a été supprimé."))
+  def joueurDeleteNameDelete404: Route =
+    complete((404, "Le joueur n&#39;existe pas."))
   /**
-   * Code: 200, Message: Boooléan de la réponse du serveur., DataType: Boolean
+   * Code: 200, Message: Le joueur a été supprimé.
+   * Code: 404, Message: Le joueur n&#39;existe pas.
    */
   def joueurDeleteNameDelete(name: String): Route
-
-  def joueurUpdateNamePut200(responseJoueur: Joueur)(implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route =
-    complete((200, responseJoueur))
-  /**
-   * Code: 200, Message: Renvoi les informations actuelles du joueur dans le jeu., DataType: Joueur
-   */
-  def joueurUpdateNamePut(name: String, `new`: String)
-      (implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route
 
 }
 
 trait DefaultApiMarshaller {
-
-  implicit def toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]
 
   implicit def toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]
 

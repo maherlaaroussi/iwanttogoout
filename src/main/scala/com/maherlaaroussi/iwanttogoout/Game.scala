@@ -12,6 +12,7 @@ import io.swagger.server.model._
 
 object Game {
   case class NewPlayer(name: String)
+  case class DeletePlayer(name: String)
   case class AttackPlayer(player: ActorRef)
   case class PositionJoueur(player: ActorRef)
   case object GenerateMap
@@ -59,6 +60,10 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
     return players.find(_._1 == player)
   }
 
+  def findPlayerWithName(name: String): Option[(ActorRef, (Int, Int))] = {
+    return players.find(_._1.path.name == name)
+  }
+
   def sayonaraPlayer(player: ActorRef): Unit = {
     val r = new Random
     var messages: List[String] = List(
@@ -69,7 +74,8 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
     )
     dead_players = dead_players + players.find(_._1 == player).get._1
     players = players - player
-    log.info(player.path.name + " est mort/morte, " + messages(r.nextInt(messages.length)))
+    system.stop(player)
+    log.info(player.path.name + " est parti/partie, " + messages(r.nextInt(messages.length)))
   }
 
   def positionJoueur(player: ActorRef): Option[(Int, Int)] = {
@@ -81,10 +87,20 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
 
   def receive: Receive = {
     case GenerateMap => generateMap()
-    case NewPlayer(name) =>
-      var player = system.actorOf(Player(), name)
-      players += (player -> (taille/2, taille/2))
-      sender ! Joueur(name, 100, "(" + taille/2 + ", " + taille/2 + ")")
+    case NewPlayer(name) => findPlayerWithName(name) match {
+        case Some(j) =>
+          sender ! Joueur("", 0, "")
+        case None =>
+          var player = system.actorOf(Player(), name)
+          players += (player -> (taille/2, taille/2))
+          sender ! Joueur(name, 100, "(" + taille/2 + ", " + taille/2 + ")")
+      }
+    case DeletePlayer(name) => findPlayerWithName(name) match {
+        case Some(j) =>
+          sayonaraPlayer(j._1)
+          sender ! true
+        case None => sender ! false
+      }
     case AttackPlayer(player) => findPlayer(player) match {
       case Some(j) => j._1 ! Player.Damage(1 + r.nextInt(100))
       case None => ;
@@ -180,6 +196,7 @@ class Player extends Actor with ActorLogging {
 }
 
 class TheGame(system: ActorSystem) {
+  // TODO: Message pour comfirmer la création d'un joueur coté serveur
   val game = system.actorOf(Game(system), "game")
 }
 

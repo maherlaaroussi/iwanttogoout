@@ -43,15 +43,28 @@ object Main extends App {
     import com.maherlaaroussi.iwanttogoout.Player._
     implicit val timeout = new Timeout(2 seconds)
 
-    def joueurCreateNameGet(name: String)
+    def joueurCreateNamePost(name: String)
                  (implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route = {
       val reponse = (thegame.game ? NewPlayer(name)).mapTo[Joueur]
       requestcontext => {
         (reponse).flatMap {
           (joueur: Joueur) =>
-            joueurCreateNameGet200(joueur)(toEntityMarshallerJoueur)(requestcontext)
+            joueurCreateNamePost200(joueur)(toEntityMarshallerJoueur)(requestcontext)
         }
       }
+
+    }
+
+    def joueurDeleteNameDelete(name: String): Route = {
+      val reponse = (thegame.game ? DeletePlayer(name)).mapTo[Boolean]
+      requestcontext => {
+        (reponse).flatMap {
+          (succes: Boolean) =>
+            if (succes) joueurDeleteNameDelete200(requestcontext)
+            else joueurDeleteNameDelete404(requestcontext)
+        }
+      }
+
 
     }
   }

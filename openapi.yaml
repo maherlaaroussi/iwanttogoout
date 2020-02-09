@@ -42,7 +42,7 @@ paths:
             '*/*':
               schema:
                 type: boolean
-  /joueur/update/{name}:
+  /joueur/update/{name}-{new}:
     put:
       summary: Modification d'un joueur.
       description: Modifie le nom du joueur et renvoi l'état actuel du joueur dans le jeu.
