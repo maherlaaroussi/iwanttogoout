@@ -67,15 +67,15 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
   def sayonaraPlayer(player: ActorRef): Unit = {
     val r = new Random
     var messages: List[String] = List(
-      "il/elle n'ira sûrement pas au paradis.",
-      "il/elle était nul/nulle, vraiment nul/nulle ...",
+      "que son âme repose en paix.",
+      "c'est pas comme si on était triste :/",
       "c'était à prévoir.",
-      "arrête le jeu franchement ..."
+      "un joueur en moins ..."
     )
     dead_players = dead_players + players.find(_._1 == player).get._1
     players = players - player
     system.stop(player)
-    log.info(player.path.name + " est parti/partie, " + messages(r.nextInt(messages.length)))
+    log.info("Le joueur " + player.path.name + " est parti, " + messages(r.nextInt(messages.length)))
   }
 
   def positionJoueur(player: ActorRef): Option[(Int, Int)] = {
@@ -93,6 +93,7 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
         case None =>
           var player = system.actorOf(Player(), name)
           players += (player -> (taille/2, taille/2))
+          log.info("Le joueur " + player.path.name + " vient de rejoindre la partie.")
           sender ! Joueur(name, 100, "(" + taille/2 + ", " + taille/2 + ")")
       }
     case DeletePlayer(name) => findPlayerWithName(name) match {

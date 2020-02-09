@@ -50,8 +50,11 @@ trait DefaultApiService {
 
   def joueurCreateNamePost200(responseJoueur: Joueur)(implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route =
     complete((200, responseJoueur))
+  def joueurCreateNamePost400: Route =
+    complete((400, "Impossible de créer le joueur."))
   /**
    * Code: 200, Message: La position du joueur dans la map, sa vie et son nom., DataType: Joueur
+   * Code: 400, Message: Impossible de créer le joueur.
    */
   def joueurCreateNamePost(name: String)
       (implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route

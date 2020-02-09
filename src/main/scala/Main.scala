@@ -49,7 +49,8 @@ object Main extends App {
       requestcontext => {
         (reponse).flatMap {
           (joueur: Joueur) =>
-            joueurCreateNamePost200(joueur)(toEntityMarshallerJoueur)(requestcontext)
+            if (!joueur.name.equals("")) joueurCreateNamePost200(joueur)(toEntityMarshallerJoueur)(requestcontext)
+            else joueurCreateNamePost400(requestcontext)
         }
       }
 
