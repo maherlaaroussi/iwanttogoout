@@ -43,6 +43,21 @@ class DefaultApi(
          
        
       }
+    } ~
+    path("joueur" / "update" / Segment / Segment) { (name, newName) => 
+      put {
+        
+          
+            
+              
+                
+                  defaultService.joueurUpdateNameNewNamePut(name = name, newName = newName)
+               
+             
+           
+         
+       
+      }
     }
 }
 
@@ -68,6 +83,19 @@ trait DefaultApiService {
    * Code: 404, Message: Le joueur n&#39;existe pas.
    */
   def joueurDeleteNameDelete(name: String): Route
+
+  def joueurUpdateNameNewNamePut200: Route =
+    complete((200, "Le nom du joueur a été modifié."))
+  def joueurUpdateNameNewNamePut404: Route =
+    complete((404, "Le joueur n&#39;existe pas."))
+  def joueurUpdateNameNewNamePut406: Route =
+    complete((406, "Le nouveau nom du joueur est déjà utilisé."))
+  /**
+   * Code: 200, Message: Le nom du joueur a été modifié.
+   * Code: 404, Message: Le joueur n&#39;existe pas.
+   * Code: 406, Message: Le nouveau nom du joueur est déjà utilisé.
+   */
+  def joueurUpdateNameNewNamePut(name: String, newName: String): Route
 
 }
 

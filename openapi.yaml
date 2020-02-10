@@ -45,6 +45,33 @@ paths:
         404:
           description: Le joueur n'existe pas.
           content: {}
+  /joueur/update/{name}/{newName}:
+    put:
+      summary: Modification du nom d'un joueur.
+      description: Modifie le nom d'un joueur et renvoi une réponse du résultat de l'opération.
+      parameters:
+      - name: name
+        in: path
+        description: Le nom du joueur.
+        required: true
+        schema:
+          type: string
+      - name: newName
+        in: path
+        description: Le nouveau nom du joueur.
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Le nom du joueur a été modifié.
+          content: {}
+        404:
+          description: Le joueur n'existe pas.
+          content: {}
+        406:
+          description: Le nouveau nom du joueur est déjà utilisé.
+          content: {}
 components:
   schemas:
     Joueur:

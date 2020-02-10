@@ -13,7 +13,7 @@ import io.swagger.server.model._
 object Game {
   case class NewPlayer(name: String)
   case class DeletePlayer(name: String)
-  case class AttackPlayer(player: ActorRef)
+  case class UpdatePlayer(name: String, newName: String)
   case class PositionJoueur(player: ActorRef)
   case object GenerateMap
   case class MoveJoueur(player: ActorRef, direction: String)
@@ -102,9 +102,14 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
           sender ! true
         case None => sender ! false
       }
-    case AttackPlayer(player) => findPlayer(player) match {
-      case Some(j) => j._1 ! Player.Damage(1 + r.nextInt(100))
-      case None => ;
+    case UpdatePlayer(name, newName) => findPlayerWithName(name) match {
+      case Some(j) => findPlayerWithName(newName) match {
+        case Some(p) => sender ! -1
+        case None =>
+          // Si le joueur existe et qu'aucun autre joueur ne porte som nouveau nom
+          sender ! 1
+      }
+      case None => sender ! 0
     }
     case PositionJoueur(player) => findPlayer(player) match {
       case Some(j) => log.info(j._1.path.name + ": " + j._2)

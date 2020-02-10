@@ -53,7 +53,6 @@ object Main extends App {
             else joueurCreateNamePost400(requestcontext)
         }
       }
-
     }
 
     def joueurDeleteNameDelete(name: String): Route = {
@@ -65,9 +64,20 @@ object Main extends App {
             else joueurDeleteNameDelete404(requestcontext)
         }
       }
-
-
     }
+
+    def joueurUpdateNameNewNamePut(name: String, newName: String): Route = {
+      val reponse = (thegame.game ? UpdatePlayer(name, newName)).mapTo[Int]
+      requestcontext => {
+        (reponse).flatMap {
+          (rsp: Int) =>
+            if (rsp == 0) joueurUpdateNameNewNamePut404(requestcontext)
+            else if (rsp == -1) joueurUpdateNameNewNamePut406(requestcontext)
+            else joueurUpdateNameNewNamePut200(requestcontext)
+        }
+      }
+    }
+
   }
 
 
