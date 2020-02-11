@@ -4,28 +4,10 @@ Serveur de jeu simpliste. Sur une map T x T, les joueurs tenteront de survivre e
 
 --------------------------------------------------------------------------------
 
-# TODO :
-- [X] Génération de la map.
-- [X] Attaque aléatoire des joueurs à chaque déplaçement.
-- [X] Attente d'une réponse de l'acteur (Utilisation du Await).
-- [X] Utilisation des Options, Some et None.
-- [ ] Suppression d'un joueur de la map.
-- [ ] Déplacement d'un joueur dans la map.
-- [X] Dégats sur un joueur.
-- [X] Récupération de la vie d'un joueur (avec sender).
-- [ ] Notification pour les joueurs mort.
-- [ ] Notification quand la partie est fini
-- [ ] Notification pour le joueur qui a gagné la partie.
-- [ ] Possibilité de relancer une partie.
-- [X] Utilisation des Future et Await
-- [ ] Fixer le problème du déplacement chaotique
-- [ ] Fixer le problème du message affiché à partir du second joueur
-
---------------------------------------------------------------------------------
-
 # Le jeu :
 
 ## Principe
+
 Un joueur peut être créé puis pourra être déplacé dans une map Z x Z. À chaque déplacement, le joueur peut être attaqué par un monstre s'il y en a dans la position du joueur. Arrivé à la limite de la map, le joueur ne pourra pas se déplacer en dehors des limites, mais chaque déplacement inutile fera qu'un monstre pourra vous attaquer. Le gagnant sera celui qui trouvera la sortie en premier. À la fin de la partie, on pourra relancer une autre partie.
 
 ## Acteurs
@@ -34,16 +16,18 @@ Un joueur peut être créé puis pourra être déplacé dans une map Z x Z. À c
 
 Celui qui gère la map, les joueurs dans celle-ci et les attaques de monstres. Un game connait la taille de sa map, sa map et les joueurs présent en jeu.
 
-###### Variables :
+#### Variables :
+
 - `map` : La map du jeu en Z x Z.
-- `taille` : Taille de la map *(6 par défault)*. 
+- `taille` : Taille de la map _(6 par défault)_.
 - `r` : Variable servant à générer un chiffre aléatoire.
 - `players` : La liste de type Map des joueurs présent dans la carte avec leur position.
 - `dead_players` : Un Set des joueurs mort.
-- `timeout` : Utilisé pour les unités *(seconds, minutes ...)*.
+- `timeout` : Utilisé pour les unités _(seconds, minutes ...)_.
 - `executionContext`
 
-###### Fonctions, Classes et Objects :
+#### Fonctions, Classes et Objects :
+
 - `generateMap` **/** `GenerateMap()` : Génération de la map aléatoire et création du chemin de sortie.
 - `NewPlayer(player)` : Ajout de joueurs dans la partie.
 - `PositionJoueur(player)` : Récupération de la position d'un joueur (ex: (1; 0)).
@@ -56,9 +40,25 @@ Celui qui gère la map, les joueurs dans celle-ci et les attaques de monstres. U
 
 Un joueur possède de la vie.
 
-###### Variables :
+#### Variables :
+
 - `life` : La vie du joueur.
 
-###### Fonctions, Classes et Objects :
+#### Fonctions, Classes et Objects :
+
 - `Damage(value)` : Fais subir à un joueur des dégats.
 - `GetLife` **/** `getLife` : Renvois la vie actuelle du joueur.
+
+--------------------------------------------------------------------------------
+
+# L'API v1 :
+
+## Routes :
+
+- **GET** /joueurs
+- **GET** /joueurs/{name}
+- **POST** /joueurs/{name}
+- **PUT** /joueurs/{name}
+- **DELETE** /joueurs/{name}
+- **POST** /joueurs/{name}/move
+- **GET** /map
