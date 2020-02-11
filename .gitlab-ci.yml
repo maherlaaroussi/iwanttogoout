@@ -13,4 +13,5 @@ before_script:
 
 compile:
   script:
+    - cd server
     - sbt compile

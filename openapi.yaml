@@ -4,81 +4,176 @@ info:
   description: API du serveur de jeu iwanttogoout.
   version: 1.0.0
 servers:
-- url: http://localhost:8080/api
+  - url: 'http://localhost:8080/api'
 paths:
-  /joueur/create/{name}:
+  '/joueurs/{name}':
     post:
       summary: Création d'un joueur.
-      description: Crée un joueur et récupère ses informations de base (nom, vie et position de départ).
+      description: >-
+        Crée un joueur et récupère ses informations de base (nom, vie et
+        position de départ).
       parameters:
-      - name: name
-        in: path
-        description: Le nom du joueur.
-        required: true
-        schema:
-          type: string
+        - name: name
+          in: path
+          description: Le nom du joueur.
+          required: true
+          schema:
+            type: string
+          example:
+            name: John
       responses:
-        200:
-          description: La position du joueur dans la map, sa vie et son nom.
+        '200':
+          description: 'La position du joueur dans la map, sa vie et son nom.'
           content:
             '*/*':
               schema:
                 $ref: '#/components/schemas/Joueur'
-        400:
+        '400':
           description: Impossible de créer le joueur.
           content: {}
-  /joueur/delete/{name}:
     delete:
       summary: Suppression d'un joueur.
-      description: Supprime un joueur de la map et renvoi une réponse précisant si cela a été possible.
+      description: >-
+        Supprime un joueur de la map et renvoi une réponse précisant si cela a
+        été possible.
       parameters:
-      - name: name
-        in: path
-        description: Le nom du joueur.
-        required: true
-        schema:
-          type: string
+        - name: name
+          in: path
+          description: Le nom du joueur.
+          required: true
+          schema:
+            type: string
+          example:
+            name: John
       responses:
-        200:
+        '200':
           description: Le joueur a été supprimé.
           content: {}
-        404:
+        '404':
           description: Le joueur n'existe pas.
           content: {}
-  /joueur/update/{name}/{newName}:
     put:
       summary: Modification du nom d'un joueur.
-      description: Modifie le nom d'un joueur et renvoi une réponse du résultat de l'opération.
+      description: >-
+        Modifie le nom d'un joueur et renvoi une réponse du résultat de
+        l'opération.
       parameters:
-      - name: name
-        in: path
-        description: Le nom du joueur.
-        required: true
-        schema:
-          type: string
-      - name: newName
-        in: path
-        description: Le nouveau nom du joueur.
-        required: true
-        schema:
-          type: string
+        - name: name
+          in: path
+          description: Le nom du joueur.
+          required: true
+          schema:
+            type: string
+          example:
+            name: John
+        - name: name
+          in: query
+          description: Le nouveau nom du joueur.
+          required: true
+          schema:
+            type: string
+          example:
+            name: Jane
       responses:
-        200:
+        '200':
           description: Le nom du joueur a été modifié.
           content: {}
-        404:
+        '404':
           description: Le joueur n'existe pas.
           content: {}
-        406:
+        '406':
           description: Le nouveau nom du joueur est déjà utilisé.
+          content: {}
+    get:
+      summary: Récupère les informations d'un joueur.
+      description: >-
+        Les informations d'un joueur comme son nom, sa vie et sa position dans
+        la map.
+      parameters:
+        - name: name
+          in: path
+          description: Le nom du joueur.
+          required: true
+          schema:
+            type: string
+          example:
+            name: John
+      responses:
+        '200':
+          description: Les informations du joueur.
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Joueur'
+        '404':
+          description: Le joueur n'existe pas.
+          content: {}
+  '/joueurs/{name}/move':
+    post:
+      summary: Déplace un joueur dans la map du jeu.
+      description: 'Un joueur se déplace dans une direction (nord, sud, ouest ou est).'
+      parameters:
+        - name: name
+          in: path
+          description: Le nom du joueur.
+          required: true
+          schema:
+            type: string
+          example:
+            name: John
+        - name: direction
+          in: query
+          description: La direction où se dirige le joueur.
+          required: true
+          schema:
+            type: string
+          example:
+            direction: nord
+      responses:
+        '200':
+          description: Les informations du joueur.
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Joueur'
+        '404':
+          description: Le joueur n'existe pas.
+          content: {}
+  '/joueurs':
+    get:
+      summary: Récupère tous les joueurs présents en jeu.
+      description: Affiche les joueurs qui sont actuellement entrain de jouer.
+      responses:
+        '200':
+          description: La liste des joueurs.
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Joueurs'
+        '404':
+          description: Aucun joueur en jeu.
+          content: {}
+  '/map':
+    get:
+      summary: Affiche la map actuelle du jeu.
+      description: Affiche la map actuelle du jeu de façon simpliste sans tous les détails.
+      responses:
+        '200':
+          description: La map actuelle du jeu.
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Map'
+        '404':
+          description: La map est dans le néant.
           content: {}
 components:
   schemas:
     Joueur:
       required:
-      - name
-      - position
-      - life
+        - name
+        - position
+        - life
       type: object
       properties:
         name:
@@ -87,3 +182,25 @@ components:
           type: integer
         position:
           type: string
+    Map:
+      required:
+        - taille
+        - monstres
+        - joueurs
+      type: object
+      properties:
+        taille:
+          type: integer
+        monstres:
+          type: integer
+        joueurs:
+          type: integer
+    Joueurs:
+      required:
+        - name
+      type: object
+      properties:
+        joueurs:
+          type: array
+          items:
+            type: string
