@@ -163,7 +163,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/Map'
+                $ref: '#/components/schemas/Carte'
         '404':
           description: La map est dans le néant.
           content: {}
@@ -182,7 +182,7 @@ components:
           type: integer
         position:
           type: string
-    Map:
+    Carte:
       required:
         - taille
         - monstres
@@ -197,7 +197,7 @@ components:
           type: integer
     Joueurs:
       required:
-        - name
+        - joueurs
       type: object
       properties:
         joueurs:

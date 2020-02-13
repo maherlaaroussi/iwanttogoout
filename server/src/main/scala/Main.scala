@@ -2,17 +2,14 @@ import akka.stream.ActorMaterializer
 import com.maherlaaroussi.iwanttogoout.Game
 import akka.actor.{ActorLogging, ActorSystem}
 import akka.http.scaladsl.Http
-import io.swagger.server.model.Joueur
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import spray.json.DefaultJsonProtocol._
+import io.swagger.server.model._
+import spray.json.DefaultJsonProtocol
 import akka.stream.ActorMaterializer
 import akka.Done
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.model.StatusCodes
 import io.swagger.server.api.{DefaultApi, DefaultApiMarshaller, DefaultApiService}
-import io.swagger.server.model.Joueur
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
 import scala.concurrent.Future
@@ -33,7 +30,11 @@ object Main extends App {
   val thegame = new TheGame(system)
 
   object DefaultMarshaller extends DefaultApiMarshaller {
+    import DefaultJsonProtocol._
+
     def toEntityMarshallerJoueur: ToEntityMarshaller[Joueur] = jsonFormat3(Joueur)
+    def toEntityMarshallerJoueurs: ToEntityMarshaller[Joueurs] = jsonFormat1(Joueurs)
+    def toEntityMarshallerCarte: ToEntityMarshaller[Carte] = jsonFormat3(Carte)
   }
 
   object DefaultService extends DefaultApiService {
@@ -43,38 +44,62 @@ object Main extends App {
     import com.maherlaaroussi.iwanttogoout.Player._
     implicit val timeout = new Timeout(2 seconds)
 
-    def joueurCreateNamePost(name: String)
+    def joueursNamePost(name: String)
                  (implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route = {
       val reponse = (thegame.game ? NewPlayer(name)).mapTo[Joueur]
       requestcontext => {
         (reponse).flatMap {
           (joueur: Joueur) =>
-            if (!joueur.name.equals("")) joueurCreateNamePost200(joueur)(toEntityMarshallerJoueur)(requestcontext)
-            else joueurCreateNamePost400(requestcontext)
+            if (!joueur.name.equals("")) joueursNamePost200(joueur)(toEntityMarshallerJoueur)(requestcontext)
+            else joueursNamePost400(requestcontext)
         }
       }
     }
 
-    def joueurDeleteNameDelete(name: String): Route = {
+    def joueursNameDelete(name: String): Route = {
       val reponse = (thegame.game ? DeletePlayer(name)).mapTo[Boolean]
       requestcontext => {
         (reponse).flatMap {
           (succes: Boolean) =>
-            if (succes) joueurDeleteNameDelete200(requestcontext)
-            else joueurDeleteNameDelete404(requestcontext)
+            if (succes) joueursNameDelete200(requestcontext)
+            else joueursNameDelete404(requestcontext)
         }
       }
     }
 
-    def joueurUpdateNameNewNamePut(name: String, newName: String): Route = {
+    def joueursNamePut(name: String, newName: String): Route = {
       val reponse = (thegame.game ? UpdatePlayer(name, newName)).mapTo[Int]
       requestcontext => {
         (reponse).flatMap {
           (rsp: Int) =>
-            if (rsp == 0) joueurUpdateNameNewNamePut404(requestcontext)
-            else if (rsp == -1) joueurUpdateNameNewNamePut406(requestcontext)
-            else joueurUpdateNameNewNamePut200(requestcontext)
+            if (rsp == 0) joueursNamePut404(requestcontext)
+            else if (rsp == -1) joueursNamePut406(requestcontext)
+            else joueursNamePut200(requestcontext)
         }
+      }
+    }
+
+    def joueursNameGet(name: String)(implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route = {
+      requestcontext => {
+        joueursNameGet404(requestcontext)
+      }
+    }
+
+    def joueursGet()(implicit toEntityMarshallerJoueurs: ToEntityMarshaller[Joueurs]): Route = {
+      requestcontext => {
+        joueursGet404(requestcontext)
+      }
+    }
+
+    def mapGet()(implicit toEntityMarshallerCarte: ToEntityMarshaller[Carte]): Route = {
+      requestcontext => {
+        mapGet404(requestcontext)
+      }
+    }
+
+    def joueursNameMovePost(name: String, direction: String)(implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route = {
+      requestcontext => {
+        joueursNameMovePost404(requestcontext)
       }
     }
 
