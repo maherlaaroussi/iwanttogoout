@@ -50,7 +50,7 @@ object Main extends App {
       requestcontext => {
         (reponse).flatMap {
           (joueur: Joueur) =>
-            if (!joueur.name.equals("")) joueursNamePost200(joueur)(toEntityMarshallerJoueur)(requestcontext)
+            if (!joueur.name.equals("")) joueursNamePost201(joueur)(toEntityMarshallerJoueur)(requestcontext)
             else joueursNamePost400(requestcontext)
         }
       }
@@ -80,26 +80,46 @@ object Main extends App {
     }
 
     def joueursNameGet(name: String)(implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route = {
+      val reponse = (thegame.game ? GetPlayer(name)).mapTo[Joueur]
       requestcontext => {
-        joueursNameGet404(requestcontext)
+        (reponse).flatMap {
+          (joueur: Joueur) =>
+            if (!joueur.name.equals("")) joueursNameGet200(joueur)(toEntityMarshallerJoueur)(requestcontext)
+            else joueursNameGet404(requestcontext)
+        }
       }
     }
 
     def joueursGet()(implicit toEntityMarshallerJoueurs: ToEntityMarshaller[Joueurs]): Route = {
+      val reponse = (thegame.game ? GetPlayers).mapTo[Joueurs]
       requestcontext => {
-        joueursGet404(requestcontext)
+        (reponse).flatMap {
+          (joueurs: Joueurs) =>
+            if (!joueurs.joueurs.isEmpty) joueursGet200(joueurs)(toEntityMarshallerJoueurs)(requestcontext)
+            else joueursGet404(requestcontext)
+        }
       }
     }
 
     def mapGet()(implicit toEntityMarshallerCarte: ToEntityMarshaller[Carte]): Route = {
+      val reponse = (thegame.game ? GetMap).mapTo[Carte]
       requestcontext => {
-        mapGet404(requestcontext)
+        (reponse).flatMap {
+          (carte: Carte) =>
+            if (carte.taille != 0) mapGet200(carte)(toEntityMarshallerCarte)(requestcontext)
+            else mapGet404(requestcontext)
+        }
       }
     }
 
     def joueursNameMovePost(name: String, direction: String)(implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route = {
+      val reponse = (thegame.game ? MovePlayer(name, direction)).mapTo[Joueur]
       requestcontext => {
-        joueursNameMovePost404(requestcontext)
+        (reponse).flatMap {
+          (joueur: Joueur) =>
+            if (!joueur.name.equals("")) joueursNameMovePost200(joueur)(toEntityMarshallerJoueur)(requestcontext)
+            else joueursNameMovePost404(requestcontext)
+        }
       }
     }
 

@@ -160,20 +160,20 @@ trait DefaultApiService {
   def joueursNameMovePost200(responseJoueur: Joueur)(implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route =
     complete((200, responseJoueur))
   def joueursNameMovePost404: Route =
-    complete((404, "Le joueur n&#39;existe pas."))
+    complete((404, "Impossible d&#39;executer cette action."))
   /**
    * Code: 200, Message: Les informations du joueur., DataType: Joueur
-   * Code: 404, Message: Le joueur n&#39;existe pas.
+   * Code: 404, Message: Impossible d&#39;executer cette action.
    */
   def joueursNameMovePost(name: String, direction: String)
       (implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route
 
-  def joueursNamePost200(responseJoueur: Joueur)(implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route =
-    complete((200, responseJoueur))
+  def joueursNamePost201(responseJoueur: Joueur)(implicit toEntityMarshallerJoueur: ToEntityMarshaller[Joueur]): Route =
+    complete((201, responseJoueur))
   def joueursNamePost400: Route =
     complete((400, "Impossible de créer le joueur."))
   /**
-   * Code: 200, Message: La position du joueur dans la map, sa vie et son nom., DataType: Joueur
+   * Code: 201, Message: La position du joueur dans la map, sa vie et son nom., DataType: Joueur
    * Code: 400, Message: Impossible de créer le joueur.
    */
   def joueursNamePost(name: String)
