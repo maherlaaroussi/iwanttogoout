@@ -10,8 +10,7 @@ paths:
     post:
       summary: Création d'un joueur.
       description: >-
-        Crée un joueur et récupère ses informations de base (nom, vie et
-        position de départ).
+        Crée un joueur et récupère ses informations de base (nom, vie et position de départ).
       parameters:
         - name: name
           in: path
@@ -22,7 +21,7 @@ paths:
           example:
             name: John
       responses:
-        '200':
+        '201':
           description: 'La position du joueur dans la map, sa vie et son nom.'
           content:
             '*/*':
@@ -34,8 +33,7 @@ paths:
     delete:
       summary: Suppression d'un joueur.
       description: >-
-        Supprime un joueur de la map et renvoi une réponse précisant si cela a
-        été possible.
+        Supprime un joueur de la map et renvoi une réponse précisant si cela aété possible.
       parameters:
         - name: name
           in: path
@@ -54,9 +52,7 @@ paths:
           content: {}
     put:
       summary: Modification du nom d'un joueur.
-      description: >-
-        Modifie le nom d'un joueur et renvoi une réponse du résultat de
-        l'opération.
+      description: Modifie le nom d'un joueur et renvoi une réponse du résultat de l'opération.
       parameters:
         - name: name
           in: path
@@ -86,8 +82,7 @@ paths:
           content: {}
     get:
       summary: Récupère les informations d'un joueur.
-      description: >-
-        Les informations d'un joueur comme son nom, sa vie et sa position dans
+      description: Les informations d'un joueur comme son nom, sa vie et sa position dans
         la map.
       parameters:
         - name: name
@@ -137,7 +132,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Joueur'
         '404':
-          description: Le joueur n'existe pas.
+          description: Impossible d'executer cette action.
           content: {}
   '/joueurs':
     get:
@@ -187,6 +182,7 @@ components:
         - taille
         - monstres
         - joueurs
+        - joueurs_morts
       type: object
       properties:
         taille:
@@ -194,6 +190,8 @@ components:
         monstres:
           type: integer
         joueurs:
+          type: integer
+        joueurs_morts:
           type: integer
     Joueurs:
       required:

@@ -34,7 +34,7 @@ object Main extends App {
 
     def toEntityMarshallerJoueur: ToEntityMarshaller[Joueur] = jsonFormat3(Joueur)
     def toEntityMarshallerJoueurs: ToEntityMarshaller[Joueurs] = jsonFormat1(Joueurs)
-    def toEntityMarshallerCarte: ToEntityMarshaller[Carte] = jsonFormat3(Carte)
+    def toEntityMarshallerCarte: ToEntityMarshaller[Carte] = jsonFormat4(Carte)
   }
 
   object DefaultService extends DefaultApiService {

@@ -31,7 +31,8 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
 
   val r = scala.util.Random
   val taille = 6
-  val caseWin: (Int, Int) = (0, taille/2)
+  var caseWin: (Int, Int) = (0, taille/2)
+  val posBegining = (taille/2, taille/2)
   var party = false
   var map: Array[Array[Map[String, AnyVal]]] = Array.ofDim[Map[String, AnyVal]](taille, taille)
   var players: Map[ActorRef, (Int, Int)] = Map[ActorRef, (Int, Int)]()
@@ -50,17 +51,66 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
         "sud" -> r.nextInt(2)
       ).withDefaultValue(0)
     }
-    // ----- Création du chemin de sortie
-    // Il part du centre de la carte et finit tout en bas
-    for (j <- 0 until taille/2) {
-      map(taille/2)(j) = map(taille/2)(j) + ("sud" -> 1)
+
+    // On défini de quelle coté sera la sortie (x ou y)
+    var whichSide = r.nextInt(2)
+    // Coté x
+    if (whichSide == 0) {
+      // Pour savoir si ce sera à l'est ou l'ouest
+      whichSide = r.nextInt(2)
+      // SORTIE: Ouest
+      if (whichSide == 0) {
+        caseWin = (0, taille/2)
+        for (j <- 0 until taille/2) {
+          map(j)(taille/2) = map(j)(taille/2) + ("sud" -> 1)
+        }
+      }
+      // SORTIE: Est
+      else {
+        caseWin = (taille-1, taille/2)
+        for (j <- taille/2 until taille-1) {
+          map(taille-1)(j) = map(taille-1)(j) + ("nord" -> 1)
+        }
+      }
     }
+    else {
+      // Pour savoir si ce sera au sud ou au nord
+      whichSide = r.nextInt(2)
+      // SORTIE: Nord
+      if (whichSide == 0) {
+        caseWin = (taille/2, 0)
+        for (j <- 0 until taille/2) {
+          map(j)(taille/2) = map(j)(taille/2) + ("nord" -> 1)
+        }
+      }
+      // SORTIE: Sud
+      else {
+        caseWin = (taille/2, taille-1)
+        for (j <- 0 until taille/2) {
+          map(j)(taille/2) = map(j)(taille/2) + ("nord" -> 1)
+        }
+      }
+    }
+
     party = true
   }
 
   def destroyMap(): Unit = {
     party = false
+  }
+
+  def resetPlayers(): Unit = {
+    dead_players foreach {
+      j =>
+        players = players + (j -> posBegining)
+        dead_players = dead_players - j
     }
+    players foreach {
+      j =>
+        j._1 ! Player.Reset
+        players = players + (j._1 -> posBegining)
+    }
+  }
 
   def findPlayer(player: ActorRef): Option[(ActorRef, (Int, Int))] = {
     return players.find(_._1 == player)
@@ -112,10 +162,10 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
             )
           )
         )
-        sender ! Carte(taille, monstres, players.size)
+        sender ! Carte(taille, monstres, players.size, dead_players.size)
       }
       else {
-        sender ! Carte(0, 0, 0)
+        sender ! Carte(0, 0, 0, 0)
       }
     case GetPlayers =>
       var joueurs = new ListBuffer[String]()
@@ -128,7 +178,7 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
           sender ! Joueur("", 0, "")
         case None =>
           var player = system.actorOf(Player(), name)
-          players += (player -> (taille/2, taille/2))
+          players += (player -> posBegining)
           log.info("Le joueur " + player.path.name + " vient de rejoindre la partie.")
           sender ! Joueur(name, 100, "(" + taille/2 + ", " + taille/2 + ")")
       }
@@ -158,55 +208,60 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
       // S'il existe bien une map dans le jeu
       if (party) {
 
-        players map { j =>
-          if (j._1.path.name == name) {
-            found = true
-            var player = j._1
-            var move = player.path.name + ": " + positionJoueur(player).getOrElse("None") + " -> "
-            var inci = Map("est" -> -1, "ouest" -> 1).withDefaultValue(0)(direction)
-            var incj = Map("nord" -> 1, "sud" -> -1).withDefaultValue(0)(direction)
-            var dgts = 1 + r.nextInt(100)
-            var f = Future { 0 }
-            f = (player ? Player.GetLife).mapTo[Int]
-            var life = Await.result(f, 5 seconds)
-
-            // Calcul de la nouvelle position
-            var posx = j._2._1 + incj
-            var posy = j._2._2 + inci
-            val posMax = taille - 1
-            if (posx > posMax || posx < 0) posx = j._2._1
-            if (posy > posMax || posy < 0) posy = j._2._2
-            players = players + (j._1 -> (posx, posy))
-            move = move + positionJoueur(player).getOrElse("None")
-            log.info(move)
-
-            // En présence d'un monstre
-            if (map(posx)(posy)("monstre") == 1) {
-              player ! Damage(dgts)
+        players foreach {
+          j =>
+            if (j._1.path.name == name) {
+              found = true
+              var player = j._1
+              var move = player.path.name + ": " + positionJoueur(player).getOrElse("None") + " -> "
+              var inci = Map("est" -> -1, "ouest" -> 1).withDefaultValue(0)(direction)
+              var incj = Map("nord" -> 1, "sud" -> -1).withDefaultValue(0)(direction)
+              var dgts = 1 + r.nextInt(100)
+              var f = Future { 0 }
               f = (player ? Player.GetLife).mapTo[Int]
-              life = Await.result(f, 5 seconds)
-              log.info(player.path.name + ": -" + dgts + ", Life: " + life)
-              if (life == 0) {
-                sayonaraPlayer(player)
-                life = 666
+              var life = Await.result(f, 5 seconds)
+
+              // Calcul de la nouvelle position
+              var posx = j._2._1 + incj
+              var posy = j._2._2 + inci
+              val posMax = taille - 1
+              if (posx > posMax || posx < 0) posx = j._2._1
+              if (posy > posMax || posy < 0) posy = j._2._2
+              players = players + (j._1 -> (posx, posy))
+              move = move + positionJoueur(player).getOrElse("None")
+              log.info(move)
+
+              // En présence d'un monstre
+              if (map(posx)(posy)("monstre") == 1) {
+                player ! Damage(dgts)
+                f = (player ? Player.GetLife).mapTo[Int]
+                life = Await.result(f, 5 seconds)
+                log.info(player.path.name + ": -" + dgts + ", Life: " + life)
+                if (life == 0) {
+                  sayonaraPlayer(player)
+                  life = 666
+                }
               }
+
+              var position = positionJoueur(player).getOrElse("Enfer")
+
+              // Le joueur a trouvé la sortie
+              if (position == caseWin) {
+                log.info(player.path.name + " a trouvé la sortie !!")
+                position = "Freedom"
+
+                // Nouvelle partie
+                destroyMap()
+                generateMap()
+                resetPlayers()
+              }
+
+              sender ! Joueur(player.path.name, life, position.toString)
+
             }
-
-            var position = positionJoueur(player).getOrElse("Enfer")
-
-            // Le joueur a trouvé la sortie
-            if (position == caseWin) {
-              log.info(player.path.name + " a trouvé la sortie !!")
-              position = "Freedom"
-              destroyMap()
-            }
-
-            sender ! Joueur(player.path.name, life, position.toString)
-
-          }
         }
 
-        // Si aucun joueur ne porte ce nom
+        // Si aucun joueur ne porte pas ce nom
         if (!found) sender ! Joueur("", 0, "")
 
       }
@@ -223,6 +278,7 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
 object Player {
   case class Damage(value: Int)
   case object GetLife
+  case object Reset
   case object GetInfos
   def apply(): Props = Props(new Player())
 }
@@ -256,6 +312,8 @@ class Player extends Actor with ActorLogging {
         "position" -> "(0,0)"
       )
       sender ! infos
+    case Reset =>
+      life = 100
     case msg @ _ => log.info(s"Message : $msg")
   }
 
