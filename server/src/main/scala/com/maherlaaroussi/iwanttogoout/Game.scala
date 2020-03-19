@@ -54,41 +54,70 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
 
     // On défini de quelle coté sera la sortie (x ou y)
     var whichSide = r.nextInt(2)
-    // Coté x
+
+    var beg = 0
+    var end = 0
+    var direction = ""
+
+    // Coté X
     if (whichSide == 0) {
-      // Pour savoir si ce sera à l'est ou l'ouest
       whichSide = r.nextInt(2)
+      direction = "x"
       // SORTIE: Ouest
       if (whichSide == 0) {
+        println("OUEST")
         caseWin = (0, taille/2)
-        for (j <- 0 until taille/2) {
-          map(j)(taille/2) = map(j)(taille/2) + ("sud" -> 1)
-        }
+        beg = taille/2
+        end = 0
       }
       // SORTIE: Est
       else {
+        println("EST")
         caseWin = (taille-1, taille/2)
-        for (j <- taille/2 until taille-1) {
-          map(taille-1)(j) = map(taille-1)(j) + ("nord" -> 1)
-        }
+        beg = taille/2
+        end = taille-1
       }
     }
+    // Coté Y
     else {
-      // Pour savoir si ce sera au sud ou au nord
       whichSide = r.nextInt(2)
+      direction = "y"
       // SORTIE: Nord
       if (whichSide == 0) {
-        caseWin = (taille/2, 0)
-        for (j <- 0 until taille/2) {
-          map(j)(taille/2) = map(j)(taille/2) + ("nord" -> 1)
-        }
+        println("NORD")
+        caseWin = (taille/2, taille-1)
+        beg = taille/2
+        end = taille-1
       }
       // SORTIE: Sud
       else {
-        caseWin = (taille/2, taille-1)
-        for (j <- 0 until taille/2) {
-          map(j)(taille/2) = map(j)(taille/2) + ("nord" -> 1)
-        }
+        println("SUD")
+        caseWin = (taille/2, 0)
+        beg = taille/2
+        end = 0
+      }
+    }
+
+      log.info("w: " + caseWin.toString + ", beg:" + beg + ", end: " + end)
+
+    // On trace le chemin de sortie, héééhaaaaaa
+
+    // Cas d'un décompte inverse
+    var tmpBeg = beg
+    var tmpEnd = end
+    if (beg > end) {
+      tmpBeg = end
+      tmpEnd = beg
+    }
+
+    for (j <- tmpBeg until (tmpEnd+1)) {
+      if (direction.equals("x")) {
+        log.info("x: " + j + "," + beg)
+        map(j)(beg) = map(j)(beg) + ("est" -> 1) + ("ouest" -> 1)
+      }
+      else {
+        log.info("y: " + beg + "," + j)
+        map(beg)(j) = map(beg)(j) + ("nord" -> 1) + ("sud" -> 1)
       }
     }
 
@@ -102,13 +131,13 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
   def resetPlayers(): Unit = {
     dead_players foreach {
       j =>
-        players = players + (j -> posBegining)
-        dead_players = dead_players - j
+      players = players + (j -> posBegining)
+      dead_players = dead_players - j
     }
     players foreach {
       j =>
-        j._1 ! Player.Reset
-        players = players + (j._1 -> posBegining)
+      j._1 ! Player.Reset
+      players = players + (j._1 -> posBegining)
     }
   }
 
@@ -118,6 +147,10 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
 
   def findPlayerWithName(name: String): Option[(ActorRef, (Int, Int))] = {
     return players.find(_._1.path.name == name)
+  }
+
+  def findDeadPlayerWithName(name: String): Option[ActorRef] = {
+    return dead_players.find(_.path.name == name)
   }
 
   def sayonaraPlayer(player: ActorRef): Unit = {
@@ -145,55 +178,59 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
     case GenerateMap => generateMap()
     case GetPlayer(name) => findPlayerWithName(name) match {
       case Some(j) =>
-        var f = (j._1 ? Player.GetInfos).mapTo[collection.mutable.Map[String, Any]]
-        var infos = Await.result(f, 5 seconds)
-        infos("position") = j._2.toString()
-        sender ! Joueur(infos("name").toString, infos("life").asInstanceOf[Int], infos("position").toString)
+      var f = (j._1 ? Player.GetInfos).mapTo[collection.mutable.Map[String, Any]]
+      var infos = Await.result(f, 5 seconds)
+      infos("position") = j._2.toString()
+      sender ! Joueur(infos("name").toString, infos("life").asInstanceOf[Int], infos("position").toString)
       case None => sender ! Joueur("", 0, "(0,0)")
     }
     case GetMap =>
-      if (party) {
-        var monstres = 0
-        map foreach (
-          i => i foreach (
-            j => j foreach (
-              // Impossible de cast AnyVal to Boolean pour le pos._2, vraiment tout testé
-              pos => if (pos._1.equals("monstre") && pos._2.toString().equals("1")) monstres += 1
-            )
+    if (party) {
+      var monstres = 0
+      map foreach (
+        i => i foreach (
+          j => j foreach (
+            // Impossible de cast AnyVal to Boolean pour le pos._2, vraiment tout testé
+            pos => if (pos._1.equals("monstre") && pos._2.toString().equals("1")) monstres += 1
           )
         )
-        sender ! Carte(taille, monstres, players.size, dead_players.size)
-      }
-      else {
-        sender ! Carte(0, 0, 0, 0)
-      }
-    case GetPlayers =>
-      var joueurs = new ListBuffer[String]()
-      players foreach (
-        j => joueurs += j._1.path.name
       )
-      sender ! Joueurs(joueurs.toList)
+      sender ! Carte(taille, monstres, players.size, dead_players.size)
+    }
+    else {
+      sender ! Carte(0, 0, 0, 0)
+    }
+    case GetPlayers =>
+    var joueurs = new ListBuffer[String]()
+    players foreach (
+      j => joueurs += j._1.path.name
+    )
+    sender ! Joueurs(joueurs.toList)
     case NewPlayer(name) => findPlayerWithName(name) match {
-        case Some(j) =>
-          sender ! Joueur("", 0, "")
+      case Some(j) => sender ! Joueur("", 0, "")
+      case None =>
+      findDeadPlayerWithName(name) match {
         case None =>
           var player = system.actorOf(Player(), name)
           players += (player -> posBegining)
           log.info("Le joueur " + player.path.name + " vient de rejoindre la partie.")
           sender ! Joueur(name, 100, "(" + taille/2 + ", " + taille/2 + ")")
+        case Some(j) => sender ! Joueur("", 0, "")
       }
+    }
     case DeletePlayer(name) => findPlayerWithName(name) match {
-        case Some(j) =>
-          sayonaraPlayer(j._1)
-          sender ! true
-        case None => sender ! false
-      }
+      case Some(j) =>
+      sayonaraPlayer(j._1)
+      sender ! true
+      case None => sender ! false
+    }
     case UpdatePlayer(name, newName) => findPlayerWithName(name) match {
       case Some(j) => findPlayerWithName(newName) match {
         case Some(p) => sender ! -1
         case None =>
-          // Si le joueur existe et qu'aucun autre joueur ne porte som nouveau nom
-          sender ! 1
+        // Si le joueur existe et qu'aucun autre joueur ne porte som nouveau nom
+        // NOTE: Comment renommer un acteur !?
+        sender ! 1
       }
       case None => sender ! 0
     }
@@ -203,73 +240,84 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
     }
     case MovePlayer(name, direction) =>
 
-      var found = false
+    var found = false
 
-      // S'il existe bien une map dans le jeu
-      if (party) {
+    // S'il existe bien une map dans le jeu
+    if (party) {
 
-        players foreach {
-          j =>
-            if (j._1.path.name == name) {
-              found = true
-              var player = j._1
-              var move = player.path.name + ": " + positionJoueur(player).getOrElse("None") + " -> "
-              var inci = Map("est" -> -1, "ouest" -> 1).withDefaultValue(0)(direction)
-              var incj = Map("nord" -> 1, "sud" -> -1).withDefaultValue(0)(direction)
-              var dgts = 1 + r.nextInt(100)
-              var f = Future { 0 }
+      players foreach {
+        j =>
+        if (j._1.path.name == name) {
+          found = true
+          var player = j._1
+          var move = player.path.name + ": " + positionJoueur(player).getOrElse("None") + " -> "
+          var inci = Map("est" -> 1, "ouest" -> -1).withDefaultValue(0)(direction)
+          var incj = Map("nord" -> 1, "sud" -> -1).withDefaultValue(0)(direction)
+          var dgts = 1 + r.nextInt(20)
+          var position = positionJoueur(player).getOrElse("Perdu")
+          var f = Future { 0 }
+          f = (player ? Player.GetLife).mapTo[Int]
+          var life = Await.result(f, 5 seconds)
+
+          // Calcul de la nouvelle position
+          var posx = j._2._1 + inci
+          var posy = j._2._2 + incj
+          val posMax = taille - 1
+          if (posx > posMax || posx < 0) posx = j._2._1
+          if (posy > posMax || posy < 0) posy = j._2._2
+
+          // Vérification si chemin bloqué
+          if (map(j._2._1)(j._2._2)(direction) == 1) {
+
+            players = players + (j._1 -> (posx, posy))
+            move = move + positionJoueur(player).getOrElse("None")
+            log.info(move)
+
+            // En présence d'un monstre
+            if (map(posx)(posy)("monstre") == 1) {
+              player ! Damage(dgts)
               f = (player ? Player.GetLife).mapTo[Int]
-              var life = Await.result(f, 5 seconds)
-
-              // Calcul de la nouvelle position
-              var posx = j._2._1 + incj
-              var posy = j._2._2 + inci
-              val posMax = taille - 1
-              if (posx > posMax || posx < 0) posx = j._2._1
-              if (posy > posMax || posy < 0) posy = j._2._2
-              players = players + (j._1 -> (posx, posy))
-              move = move + positionJoueur(player).getOrElse("None")
-              log.info(move)
-
-              // En présence d'un monstre
-              if (map(posx)(posy)("monstre") == 1) {
-                player ! Damage(dgts)
-                f = (player ? Player.GetLife).mapTo[Int]
-                life = Await.result(f, 5 seconds)
-                log.info(player.path.name + ": -" + dgts + ", Life: " + life)
-                if (life == 0) {
-                  sayonaraPlayer(player)
-                  life = 666
-                }
+              life = Await.result(f, 5 seconds)
+              log.info(player.path.name + ": -" + dgts + ", Life: " + life)
+              if (life == 0) {
+                sayonaraPlayer(player)
+                life = 666
               }
-
-              var position = positionJoueur(player).getOrElse("Enfer")
-
-              // Le joueur a trouvé la sortie
-              if (position == caseWin) {
-                log.info(player.path.name + " a trouvé la sortie !!")
-                position = "Freedom"
-
-                // Nouvelle partie
-                destroyMap()
-                generateMap()
-                resetPlayers()
-              }
-
-              sender ! Joueur(player.path.name, life, position.toString)
-
             }
+
+            position = positionJoueur(player).getOrElse("Enfer")
+
+            // Le joueur a trouvé la sortie
+            if (position == caseWin) {
+              log.info(player.path.name + " a trouvé la sortie !!")
+              position = "Freedom"
+
+              // Nouvelle partie
+              destroyMap()
+              generateMap()
+              resetPlayers()
+            }
+
+          }
+          else {
+            move = move + positionJoueur(player).getOrElse("None")
+            log.info(move)
+          }
+
+          sender ! Joueur(player.path.name, life, position.toString)
+
         }
-
-        // Si aucun joueur ne porte pas ce nom
-        if (!found) sender ! Joueur("", 0, "")
-
       }
-      // Dans le cas où il n'y a pas de map
-      else {
-        log.info("La map a été réduite à néant :o !")
-        sender ! Joueur("", 0, "")
-      }
+
+      // Si aucun joueur ne porte pas ce nom
+      if (!found) sender ! Joueur("", 0, "")
+
+    }
+    // Dans le cas où il n'y a pas de map
+    else {
+      log.info("La map a été réduite à néant :o !")
+      sender ! Joueur("", 0, "")
+    }
     case msg @ _ => log.info(s"Message : $msg")
   }
 
@@ -298,29 +346,28 @@ class Player extends Actor with ActorLogging {
 
   def receive: Receive = {
     case Damage(value) =>
-      life -= value
-      if (life < 0 || life == 0) {
-        life = 0
-      }
+    life -= value
+    if (life < 0 || life == 0) {
+      life = 0
+    }
     case GetLife =>
-      val game = sender
-      game ! getLife()
+    val game = sender
+    game ! getLife()
     case GetInfos =>
-      var infos = collection.mutable.Map(
-        "name" -> self.path.name,
-        "life" -> life,
-        "position" -> "(0,0)"
-      )
-      sender ! infos
+    var infos = collection.mutable.Map(
+      "name" -> self.path.name,
+      "life" -> life,
+      "position" -> "(0,0)"
+    )
+    sender ! infos
     case Reset =>
-      life = 100
+    life = 100
     case msg @ _ => log.info(s"Message : $msg")
   }
 
 }
 
 class TheGame(system: ActorSystem) {
-  // TODO: Message pour comfirmer la création d'un joueur coté serveur
   val game = system.actorOf(Game(system), "game")
   game ! Game.GenerateMap
 }
@@ -328,4 +375,3 @@ class TheGame(system: ActorSystem) {
 object ApiMessages {
   case class Joueur(name: String, life: Int, position: String)
 }
-
