@@ -65,14 +65,14 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
       direction = "x"
       // SORTIE: Ouest
       if (whichSide == 0) {
-        println("OUEST")
+        log.info("SORIE: OUEST")
         caseWin = (0, taille/2)
         beg = taille/2
         end = 0
       }
       // SORTIE: Est
       else {
-        println("EST")
+        log.info("SORIE: EST")
         caseWin = (taille-1, taille/2)
         beg = taille/2
         end = taille-1
@@ -84,21 +84,19 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
       direction = "y"
       // SORTIE: Nord
       if (whichSide == 0) {
-        println("NORD")
+        log.info("SORIE: NORD")
         caseWin = (taille/2, taille-1)
         beg = taille/2
         end = taille-1
       }
       // SORTIE: Sud
       else {
-        println("SUD")
+        log.info("SORIE: SUD")
         caseWin = (taille/2, 0)
         beg = taille/2
         end = 0
       }
     }
-
-      log.info("w: " + caseWin.toString + ", beg:" + beg + ", end: " + end)
 
     // On trace le chemin de sortie, héééhaaaaaa
 
@@ -112,11 +110,9 @@ class Game(system: ActorSystem) extends Actor with ActorLogging {
 
     for (j <- tmpBeg until (tmpEnd+1)) {
       if (direction.equals("x")) {
-        log.info("x: " + j + "," + beg)
         map(j)(beg) = map(j)(beg) + ("est" -> 1) + ("ouest" -> 1)
       }
       else {
-        log.info("y: " + beg + "," + j)
         map(beg)(j) = map(beg)(j) + ("nord" -> 1) + ("sud" -> 1)
       }
     }
